@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CheckCircle2,
   Flame,
@@ -7,14 +7,37 @@ import {
   Plus,
   Search,
   ShoppingBag,
-  Trash2,
   UtensilsCrossed,
 } from 'lucide-react';
 import { menuApi, orderApi, reportApi } from '../services/api.js';
 import { calculateOrderTotals, formatDateTime, formatRupiah } from '../utils/format.js';
 import StatusBadge from '../components/StatusBadge.jsx';
+import OrderSummaryPanel from '../components/OrderSummaryPanel.jsx';
+import { useOverlayDialog } from '../hooks/useOverlayDialog.js';
 
 const CATEGORIES = ['Semua', 'Makanan', 'Paket', 'Minuman', 'Tambahan'];
+
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return false;
+    }
+    return window.matchMedia(query).matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return undefined;
+    }
+    const mediaQuery = window.matchMedia(query);
+    const update = () => setMatches(mediaQuery.matches);
+    update();
+    mediaQuery.addEventListener('change', update);
+    return () => mediaQuery.removeEventListener('change', update);
+  }, [query]);
+
+  return matches;
+}
 
 export default function CustomerOrderPage({ onOpenLogin }) {
   const [menus, setMenus] = useState([]);
@@ -26,11 +49,23 @@ export default function CustomerOrderPage({ onOpenLogin }) {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [lastOrder, setLastOrder] = useState(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const [trackCode, setTrackCode] = useState('');
   const [trackedOrder, setTrackedOrder] = useState(null);
   const [trackError, setTrackError] = useState('');
   const [showTracker, setShowTracker] = useState(false);
+
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
+  const summaryTriggerRef = useRef(null);
+
+  useOverlayDialog(sheetOpen && !isDesktop, () => setSheetOpen(false), summaryTriggerRef);
+
+  useEffect(() => {
+    if (isDesktop && sheetOpen) {
+      setSheetOpen(false);
+    }
+  }, [isDesktop, sheetOpen]);
 
   useEffect(() => {
     Promise.all([menuApi.list(), reportApi.getDashboardSummary()]).then(([menuList, summary]) => {
@@ -84,6 +119,7 @@ export default function CustomerOrderPage({ onOpenLogin }) {
       setCart({});
       setCustomerName('');
       setNotes('');
+      setSheetOpen(false);
     } catch (err) {
       setError(err.message || 'Gagal mengirim pesanan.');
     } finally {
@@ -106,13 +142,13 @@ export default function CustomerOrderPage({ onOpenLogin }) {
   return (
     <div className="min-h-screen bg-[#FAF7F2]">
       <header className="sticky top-0 z-20 bg-[#FAF7F2]/95 backdrop-blur border-b border-[#E7DFD3]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-[#C84B24] text-white flex items-center justify-center shrink-0">
-              <UtensilsCrossed className="w-5 h-5" />
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 min-h-16 py-2 flex items-center justify-between gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#C84B24] text-white flex items-center justify-center shrink-0">
+              <UtensilsCrossed className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
             </div>
-            <div className="truncate">
-              <span className="font-extrabold text-base tracking-tight text-[#1F1915] block leading-none">
+            <div className="min-w-0">
+              <span className="font-extrabold text-sm sm:text-base tracking-tight text-[#1F1915] block leading-none truncate">
                 PesanKu
               </span>
               <span className="text-xs text-[#6B5E54] truncate block mt-0.5">
@@ -121,29 +157,30 @@ export default function CustomerOrderPage({ onOpenLogin }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               type="button"
+              aria-expanded={showTracker}
               onClick={() => setShowTracker((v) => !v)}
-              className="px-3 py-2 rounded-xl border border-[#E7DFD3] bg-white hover:bg-[#F3ECE2] text-xs sm:text-sm font-semibold text-[#1F1915] transition-colors cursor-pointer"
+              className="min-h-[44px] px-2 sm:px-3 py-2 rounded-xl border border-[#E7DFD3] bg-white hover:bg-[#F3ECE2] text-xs sm:text-sm font-semibold text-[#1F1915] motion-reduce:transition-none transition-colors whitespace-nowrap"
             >
               Lacak Pesanan
             </button>
             <button
               type="button"
               onClick={onOpenLogin}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#1F1915] hover:bg-[#352C26] text-white text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
+              className="min-h-[44px] inline-flex items-center gap-1.5 px-2 sm:px-3 py-2 rounded-xl bg-[#1F1915] hover:bg-[#352C26] text-white text-xs sm:text-sm font-semibold motion-reduce:transition-none transition-colors whitespace-nowrap shrink-0"
             >
-              <LogIn className="w-4 h-4" />
+              <LogIn className="w-4 h-4" aria-hidden="true" />
               <span>Pemilik</span>
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="max-w-6xl mx-auto px-3.5 sm:px-6 pt-6 sm:pt-8 pb-28 lg:pb-8">
         {showTracker && (
-          <section className="mb-6 bg-white border border-[#E7DFD3] rounded-2xl p-5">
+          <section className="mb-6 bg-white border border-[#E7DFD3] rounded-2xl p-4 sm:p-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
               <div>
                 <h2 className="font-bold text-base text-[#1F1915]">Lacak Status Pesanan</h2>
@@ -153,39 +190,53 @@ export default function CustomerOrderPage({ onOpenLogin }) {
               </div>
               <form onSubmit={handleTrack} className="flex gap-2 w-full sm:w-auto">
                 <div className="relative flex-1 sm:w-52">
-                  <Search className="w-4 h-4 text-[#6B5E54] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <label htmlFor="track-order-code" className="sr-only">
+                    Kode pesanan
+                  </label>
+                  <Search
+                    className="w-4 h-4 text-[#6B5E54] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                    aria-hidden="true"
+                  />
                   <input
+                    id="track-order-code"
                     type="text"
                     value={trackCode}
                     onChange={(e) => setTrackCode(e.target.value)}
                     placeholder="Kode pesanan..."
-                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#E7DFD3] text-sm focus:outline-none focus:border-[#C84B24]"
+                    className="w-full min-h-[44px] pl-9 pr-3 py-2 rounded-xl border border-[#E7DFD3] text-sm text-[#1F1915] placeholder:text-[#6B5E54] focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24]/30"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-[#C84B24] hover:bg-[#A93B19] text-white text-sm font-semibold cursor-pointer"
+                  className="min-h-[44px] px-4 py-2 rounded-xl bg-[#C84B24] hover:bg-[#A93B19] text-white text-sm font-semibold shrink-0 motion-reduce:transition-none transition-colors"
                 >
                   Cek
                 </button>
               </form>
             </div>
 
-            {trackError && <p className="text-sm text-rose-700 mt-2">{trackError}</p>}
+            {trackError && (
+              <p role="alert" className="text-sm text-rose-700 mt-2">
+                {trackError}
+              </p>
+            )}
 
             {trackedOrder && (
               <div className="mt-3 pt-3 border-t border-[#E7DFD3] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-sm">{trackedOrder.code}</span>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono font-bold text-sm text-[#1F1915]">
+                      {trackedOrder.code}
+                    </span>
                     <StatusBadge status={trackedOrder.status} />
                   </div>
-                  <p className="text-sm text-[#1F1915] font-medium mt-1">
-                    {trackedOrder.customerName} — {trackedOrder.items.map((i) => `${i.name} x${i.qty}`).join(', ')}
+                  <p className="text-sm text-[#1F1915] font-medium mt-1 break-words">
+                    {trackedOrder.customerName}:{' '}
+                    {trackedOrder.items.map((i) => `${i.name} x${i.qty}`).join(', ')}
                   </p>
                   <p className="text-xs text-[#6B5E54] mt-0.5">{formatDateTime(trackedOrder.createdAt)}</p>
                 </div>
-                <div className="text-left sm:text-right">
+                <div className="text-left sm:text-right shrink-0">
                   <span className="text-xs text-[#6B5E54] block">Total</span>
                   <span className="font-bold text-base tabular-nums text-[#C84B24]">
                     {formatRupiah(trackedOrder.totalAmount)}
@@ -197,10 +248,10 @@ export default function CustomerOrderPage({ onOpenLogin }) {
         )}
 
         {lastOrder && (
-          <section className="mb-6 bg-emerald-50 border border-emerald-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="w-6 h-6 text-emerald-700 shrink-0 mt-0.5" />
-              <div>
+          <section className="mb-6 bg-emerald-50 border border-emerald-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3 min-w-0">
+              <CheckCircle2 className="w-6 h-6 text-emerald-700 shrink-0 mt-0.5" aria-hidden="true" />
+              <div className="min-w-0">
                 <h2 className="font-bold text-emerald-950">Pesanan Berhasil Dikirim!</h2>
                 <p className="text-sm text-emerald-900 mt-0.5">
                   Kode pesanan Anda: <span className="font-mono font-bold">{lastOrder.code}</span> • Total{' '}
@@ -219,7 +270,7 @@ export default function CustomerOrderPage({ onOpenLogin }) {
                 setShowTracker(true);
                 setLastOrder(null);
               }}
-              className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold shrink-0 cursor-pointer"
+              className="min-h-[44px] px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold shrink-0 motion-reduce:transition-none transition-colors"
             >
               Pantau Status
             </button>
@@ -227,7 +278,7 @@ export default function CustomerOrderPage({ onOpenLogin }) {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          <div className="lg:col-span-8">
+          <div className="lg:col-span-8 min-w-0">
             <div className="mb-5">
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F1915]">
                 Daftar Menu Hari Ini
@@ -242,8 +293,9 @@ export default function CustomerOrderPage({ onOpenLogin }) {
                 <button
                   key={cat}
                   type="button"
+                  aria-pressed={category === cat}
                   onClick={() => setCategory(cat)}
-                  className={`px-3.5 py-1.5 rounded-full text-sm font-semibold transition-colors cursor-pointer ${
+                  className={`min-h-[44px] px-4 py-2 rounded-full text-sm font-semibold motion-reduce:transition-none transition-colors ${
                     category === cat
                       ? 'bg-[#1F1915] text-white'
                       : 'bg-white border border-[#E7DFD3] text-[#6B5E54] hover:text-[#1F1915]'
@@ -254,183 +306,174 @@ export default function CustomerOrderPage({ onOpenLogin }) {
               ))}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {visibleMenus.map((menu) => {
-                const qty = cart[menu.id] || 0;
-                const isRecommended = topMenuNames.includes(menu.name);
-                return (
-                  <article
-                    key={menu.id}
-                    className={`bg-white border rounded-2xl p-4 flex flex-col justify-between transition-colors ${
-                      qty > 0 ? 'border-[#C84B24]' : 'border-[#E7DFD3]'
-                    } ${!menu.available ? 'opacity-60' : ''}`}
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="text-[11px] font-semibold uppercase tracking-wider text-[#6B5E54]">
-                          {menu.category}
-                        </span>
-                        {isRecommended && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-50 text-[#C84B24] border border-orange-200 text-[11px] font-semibold">
-                            <Flame className="w-3 h-3" />
-                            Favorit
+            {visibleMenus.length === 0 ? (
+              <div className="bg-white border border-dashed border-[#E7DFD3] rounded-2xl p-8 text-center">
+                <p className="text-sm font-semibold text-[#1F1915]">Belum ada menu pada kategori ini</p>
+                <p className="text-xs text-[#6B5E54] mt-1">
+                  Pilih kategori lain untuk melihat menu yang tersedia.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+                {visibleMenus.map((menu) => {
+                  const qty = cart[menu.id] || 0;
+                  const isRecommended = topMenuNames.includes(menu.name);
+                  return (
+                    <article
+                      key={menu.id}
+                      className={`bg-white border rounded-2xl p-4 flex flex-col justify-between motion-reduce:transition-none transition-colors ${
+                        qty > 0 ? 'border-[#C84B24]' : 'border-[#E7DFD3]'
+                      } ${!menu.available ? 'opacity-60' : ''}`}
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-[11px] font-semibold uppercase tracking-wider text-[#6B5E54]">
+                            {menu.category}
                           </span>
+                          {isRecommended && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FFF3E8] text-[#A93B19] border border-[#F3D2BA] text-[11px] font-semibold">
+                              <Flame className="w-3 h-3" aria-hidden="true" />
+                              Favorit
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="font-bold text-base text-[#1F1915] mt-1 break-words">
+                          {menu.name}
+                        </h3>
+                        {menu.description && (
+                          <p className="text-xs text-[#6B5E54] mt-1 leading-relaxed">{menu.description}</p>
                         )}
                       </div>
-                      <h3 className="font-bold text-base text-[#1F1915] mt-1">{menu.name}</h3>
-                      {menu.description && (
-                        <p className="text-xs text-[#6B5E54] mt-1 leading-relaxed">{menu.description}</p>
-                      )}
-                    </div>
 
-                    <div className="mt-4 pt-3 border-t border-[#F1EAE0] flex items-center justify-between gap-2">
-                      <span className="font-extrabold text-base tabular-nums text-[#1F1915]">
-                        {formatRupiah(menu.price)}
-                      </span>
-
-                      {!menu.available ? (
-                        <span className="text-xs font-semibold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg">
-                          Habis
+                      <div className="mt-4 pt-3 border-t border-[#F1EAE0] flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-extrabold text-base tabular-nums text-[#1F1915]">
+                          {formatRupiah(menu.price)}
                         </span>
-                      ) : qty === 0 ? (
-                        <button
-                          type="button"
-                          onClick={() => updateQty(menu.id, 1)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#FAF7F2] hover:bg-[#C84B24] text-[#1F1915] hover:text-white border border-[#E7DFD3] hover:border-[#C84B24] text-xs font-bold transition-colors cursor-pointer"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          Tambah
-                        </button>
-                      ) : (
-                        <div className="inline-flex items-center gap-2 bg-[#FAF7F2] border border-[#E7DFD3] rounded-xl p-1">
+
+                        {!menu.available ? (
+                          <span className="text-xs font-semibold text-rose-700 bg-rose-50 px-2.5 py-1.5 rounded-lg">
+                            Habis
+                          </span>
+                        ) : qty === 0 ? (
                           <button
                             type="button"
-                            aria-label={`Kurangi ${menu.name}`}
-                            onClick={() => updateQty(menu.id, -1)}
-                            className="w-7 h-7 rounded-lg bg-white hover:bg-[#F3ECE2] flex items-center justify-center text-[#1F1915] cursor-pointer"
-                          >
-                            <Minus className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="w-6 text-center text-sm font-bold tabular-nums">{qty}</span>
-                          <button
-                            type="button"
-                            aria-label={`Tambah ${menu.name}`}
                             onClick={() => updateQty(menu.id, 1)}
-                            className="w-7 h-7 rounded-lg bg-[#C84B24] hover:bg-[#A93B19] flex items-center justify-center text-white cursor-pointer"
+                            className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#FAF7F2] hover:bg-[#C84B24] text-[#1F1915] hover:text-white border border-[#E7DFD3] hover:border-[#C84B24] text-xs sm:text-sm font-bold motion-reduce:transition-none transition-colors"
                           >
-                            <Plus className="w-3.5 h-3.5" />
+                            <Plus className="w-4 h-4" aria-hidden="true" />
+                            Tambah
                           </button>
-                        </div>
-                      )}
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
+                        ) : (
+                          <div className="inline-flex items-center gap-1 bg-[#FAF7F2] border border-[#E7DFD3] rounded-xl p-0.5">
+                            <button
+                              type="button"
+                              aria-label={`Kurangi ${menu.name}`}
+                              onClick={() => updateQty(menu.id, -1)}
+                              className="min-w-[44px] min-h-[44px] rounded-lg bg-white hover:bg-[#F3ECE2] flex items-center justify-center text-[#1F1915] motion-reduce:transition-none transition-colors"
+                            >
+                              <Minus className="w-4 h-4" aria-hidden="true" />
+                            </button>
+                            <span className="min-w-[24px] text-center text-sm font-bold tabular-nums text-[#1F1915]">
+                              {qty}
+                            </span>
+                            <button
+                              type="button"
+                              aria-label={`Tambah ${menu.name}`}
+                              onClick={() => updateQty(menu.id, 1)}
+                              className="min-w-[44px] min-h-[44px] rounded-lg bg-[#C84B24] hover:bg-[#A93B19] flex items-center justify-center text-white motion-reduce:transition-none transition-colors"
+                            >
+                              <Plus className="w-4 h-4" aria-hidden="true" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          <aside className="lg:col-span-4 lg:sticky lg:top-22">
-            <div className="bg-white border border-[#E7DFD3] rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <ShoppingBag className="w-5 h-5 text-[#C84B24]" />
-                  <h2 className="font-bold text-base text-[#1F1915]">Ringkasan Pesanan</h2>
-                </div>
-                <span className="text-xs font-semibold text-[#6B5E54] tabular-nums">
-                  {totalItems} item
-                </span>
-              </div>
-
-              {cartItems.length === 0 ? (
-                <div className="py-8 text-center border border-dashed border-[#E7DFD3] rounded-xl mb-4">
-                  <p className="text-sm font-medium text-[#6B5E54]">Keranjang masih kosong</p>
-                  <p className="text-xs text-[#8C7E73] mt-1">Pilih menu di sebelah kiri untuk mulai memesan.</p>
-                </div>
-              ) : (
-                <ul className="divide-y divide-[#F1EAE0] mb-4 max-h-60 overflow-y-auto">
-                  {cartItems.map((item) => (
-                    <li key={item.menuId} className="py-2.5 flex items-center justify-between gap-2 text-sm">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-[#1F1915] truncate">{item.name}</p>
-                        <p className="text-xs text-[#6B5E54] tabular-nums">
-                          {item.qty} × {formatRupiah(item.price)}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="font-bold tabular-nums">
-                          {formatRupiah(item.qty * item.price)}
-                        </span>
-                        <button
-                          type="button"
-                          aria-label={`Hapus ${item.name}`}
-                          onClick={() => updateQty(item.menuId, -item.qty)}
-                          className="text-[#8C7E73] hover:text-rose-700 cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              <div className="flex items-center justify-between py-3 border-t border-[#E7DFD3] mb-4">
-                <span className="text-sm font-semibold text-[#6B5E54]">Total Pembayaran</span>
-                <span className="text-lg font-extrabold tabular-nums text-[#C84B24]">
-                  {formatRupiah(totalAmount)}
-                </span>
-              </div>
-
-              <form onSubmit={handleSubmitOrder} className="space-y-3" noValidate>
-                <div>
-                  <label htmlFor="customer-name" className="block text-xs font-semibold text-[#1F1915] mb-1">
-                    Nama Pemesan *
-                  </label>
-                  <input
-                    id="customer-name"
-                    type="text"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Contoh: Budi Santoso"
-                    className="w-full px-3 py-2 rounded-xl border border-[#E7DFD3] text-sm focus:outline-none focus:border-[#C84B24]"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="customer-notes" className="block text-xs font-semibold text-[#1F1915] mb-1">
-                    Catatan (opsional)
-                  </label>
-                  <input
-                    id="customer-notes"
-                    type="text"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Level pedas, bungkus / makan di tempat..."
-                    className="w-full px-3 py-2 rounded-xl border border-[#E7DFD3] text-sm focus:outline-none focus:border-[#C84B24]"
-                  />
-                </div>
-
-                {error && (
-                  <div
-                    role="alert"
-                    className="rounded-xl bg-rose-50 border border-rose-200 px-3 py-2 text-xs text-rose-800"
-                  >
-                    {error}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full py-2.5 px-4 rounded-xl bg-[#C84B24] hover:bg-[#A93B19] disabled:opacity-60 text-white font-bold text-sm transition-colors cursor-pointer"
-                >
-                  {submitting ? 'Mengirim Pesanan...' : 'Kirim Pesanan'}
-                </button>
-              </form>
-            </div>
-          </aside>
+          {isDesktop && (
+            <aside className="lg:col-span-4 lg:sticky lg:top-22">
+              <OrderSummaryPanel
+                cartItems={cartItems}
+                totalItems={totalItems}
+                totalAmount={totalAmount}
+                customerName={customerName}
+                notes={notes}
+                error={error}
+                submitting={submitting}
+                variant="sidebar"
+                onCustomerNameChange={setCustomerName}
+                onNotesChange={setNotes}
+                onUpdateQty={updateQty}
+                onSubmit={handleSubmitOrder}
+              />
+            </aside>
+          )}
         </div>
       </main>
+
+      {!isDesktop && (
+        <div className="fixed inset-x-0 bottom-0 z-30 bg-[#FAF7F2]/95 backdrop-blur border-t border-[#E7DFD3] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="max-w-4xl mx-auto px-3 sm:px-6 pt-2.5 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <span className="text-xs font-semibold text-[#6B5E54] block tabular-nums">
+                {totalItems} Item
+              </span>
+              <span className="font-extrabold text-base sm:text-lg tabular-nums text-[#A93B19] block truncate">
+                {formatRupiah(totalAmount)}
+              </span>
+            </div>
+
+            <button
+              ref={summaryTriggerRef}
+              type="button"
+              aria-expanded={sheetOpen}
+              aria-controls="customer-order-sheet"
+              onClick={() => setSheetOpen(true)}
+              className="min-h-[44px] px-4 sm:px-5 rounded-xl bg-[#C84B24] hover:bg-[#A93B19] text-white text-sm font-bold inline-flex items-center gap-2 shrink-0 motion-reduce:transition-none transition-colors"
+            >
+              <ShoppingBag className="w-4 h-4" aria-hidden="true" />
+              <span>{totalItems === 0 ? 'Buka Ringkasan' : 'Lihat Pesanan'}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!isDesktop && sheetOpen && (
+        <>
+          <div
+            aria-hidden="true"
+            onClick={() => setSheetOpen(false)}
+            className="fixed inset-0 z-40 bg-black/40"
+          />
+          <div
+            id="customer-order-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Pesanan Anda"
+            className="fixed inset-x-0 bottom-0 z-50 w-full max-w-4xl mx-auto bg-white rounded-t-2xl border border-b-0 border-[#E7DFD3] max-h-[85dvh] flex flex-col overflow-hidden shadow-2xl pb-[env(safe-area-inset-bottom)]"
+          >
+            <OrderSummaryPanel
+              cartItems={cartItems}
+              totalItems={totalItems}
+              totalAmount={totalAmount}
+              customerName={customerName}
+              notes={notes}
+              error={error}
+              submitting={submitting}
+              variant="sheet"
+              onCustomerNameChange={setCustomerName}
+              onNotesChange={setNotes}
+              onUpdateQty={updateQty}
+              onSubmit={handleSubmitOrder}
+              onClose={() => setSheetOpen(false)}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }
