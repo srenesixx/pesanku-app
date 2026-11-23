@@ -171,7 +171,7 @@ export default function OrdersPage({
                   aria-label={`Ubah status ${order.code}`}
                   value={order.status}
                   onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                  className="min-h-[44px] px-3 py-2 rounded-xl border border-[#E7DFD3] bg-[#FAF7F2] text-sm font-semibold text-[#1F1915] focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24]/30 cursor-pointer"
+                  className="min-h-[44px] px-3 py-2 rounded-xl border border-[#E7DFD3] bg-[#FAF7F2] text-sm font-semibold text-[#1F1915] focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24] focus-visible:ring-offset-1 cursor-pointer"
                 >
                   {STATUS_OPTIONS.map((st) => (
                     <option key={st} value={st}>
@@ -223,7 +223,7 @@ export default function OrdersPage({
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     placeholder="Contoh: Pembeli Meja 2"
-                    className="w-full min-h-[44px] px-3 py-2 rounded-xl border border-[#E7DFD3] text-sm text-[#1F1915] placeholder:text-[#6B5E54] focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24]/30"
+                    className="w-full min-h-[44px] px-3 py-2 rounded-xl border border-[#E7DFD3] text-sm text-[#1F1915] placeholder:text-[#6B5E54] focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24] focus-visible:ring-offset-1"
                   />
                 </div>
                 <div>
@@ -236,7 +236,7 @@ export default function OrdersPage({
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Opsional..."
-                    className="w-full min-h-[44px] px-3 py-2 rounded-xl border border-[#E7DFD3] text-sm text-[#1F1915] placeholder:text-[#6B5E54] focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24]/30"
+                    className="w-full min-h-[44px] px-3 py-2 rounded-xl border border-[#E7DFD3] text-sm text-[#1F1915] placeholder:text-[#6B5E54] focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24] focus-visible:ring-offset-1"
                   />
                 </div>
               </div>

@@ -92,7 +92,7 @@ export default function DashboardPage({ initialSummary = null } = {}) {
                   </span>
                   <div className="w-full max-w-12 bg-[#FAF7F2] rounded-t-xl h-28 flex items-end overflow-hidden border border-[#F1EAE0]">
                     <div
-                      className="w-full bg-[#C84B24] rounded-t-lg transition-all"
+                      className="w-full bg-[#C84B24] rounded-t-lg motion-reduce:transition-none transition-all"
                       style={{ height: `${heightPct}%` }}
                     />
                   </div>

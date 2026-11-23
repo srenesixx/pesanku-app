@@ -61,7 +61,7 @@ export default function LoginPage({ onSuccess, onBack }) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="pemilik@maknyus.id"
-                  className="w-full min-h-[44px] pl-10 pr-3.5 py-2.5 rounded-xl border border-[#E7DFD3] bg-[#FAF7F2]/50 text-sm focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24]/30"
+                  className="w-full min-h-[44px] pl-10 pr-3.5 py-2.5 rounded-xl border border-[#E7DFD3] bg-[#FAF7F2]/50 text-sm focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24] focus-visible:ring-offset-1"
                 />
               </div>
             </div>
@@ -81,7 +81,7 @@ export default function LoginPage({ onSuccess, onBack }) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Masukkan kata sandi"
-                  className="w-full min-h-[44px] pl-10 pr-3.5 py-2.5 rounded-xl border border-[#E7DFD3] bg-[#FAF7F2]/50 text-sm focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24]/30"
+                  className="w-full min-h-[44px] pl-10 pr-3.5 py-2.5 rounded-xl border border-[#E7DFD3] bg-[#FAF7F2]/50 text-sm focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24] focus-visible:ring-offset-1"
                 />
               </div>
             </div>
@@ -98,7 +98,7 @@ export default function LoginPage({ onSuccess, onBack }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-[#C84B24] hover:bg-[#A93B19] disabled:opacity-60 text-white font-semibold text-sm motion-reduce:transition-none transition-colors cursor-pointer"
+              className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-[#C84B24] hover:bg-[#A93B19] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-[#C84B24] text-white font-semibold text-sm motion-reduce:transition-none transition-colors cursor-pointer"
             >
               {loading ? 'Memeriksa akun...' : 'Masuk ke Dashboard'}
             </button>

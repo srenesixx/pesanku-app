@@ -93,14 +93,25 @@ test('LoginPage dibungkus landmark <main>, memakai padding responsif, footer fle
   assert.ok(html.includes('</main>'));
   assert.ok(html.includes('p-5 sm:p-7'));
 
-  assert.match(html, /class="[^"]*min-h-\[44px\][^"]*">[^<]*<svg[^>]*>.*?<\/svg>Kembali ke Halaman Pembeli/);
-  assert.match(html, /<button[^>]*type="submit"[^>]*class="[^"]*min-h-\[44px\][^"]*"[^>]*>Masuk ke Dashboard<\/button>/);
-  assert.match(html, /class="[^"]*min-h-\[44px\][^"]*">Isi otomatis \(pemilik@maknyus\.id\)<\/button>/);
+  const backBtnMatch = html.match(/<button\b([^>]*)>[^<]*<svg[^>]*>.*?<\/svg>Kembali ke Halaman Pembeli<\/button>/);
+  assert.ok(backBtnMatch && backBtnMatch[1].includes('min-h-[44px]'));
+
+  const submitBtnMatch = html.match(/<button\b([^>]*)>Masuk ke Dashboard<\/button>/);
+  assert.ok(submitBtnMatch, 'Tombol submit harus ada');
+  assert.ok(submitBtnMatch[1].includes('type="submit"'));
+  assert.ok(submitBtnMatch[1].includes('min-h-[44px]'));
+  assert.ok(submitBtnMatch[1].includes('disabled:cursor-not-allowed'));
+  assert.ok(submitBtnMatch[1].includes('disabled:hover:bg-[#C84B24]'));
+
+  const autofillBtnMatch = html.match(/<button\b([^>]*)>Isi otomatis \(pemilik@maknyus\.id\)<\/button>/);
+  assert.ok(autofillBtnMatch && autofillBtnMatch[1].includes('min-h-[44px]'));
 
   assert.match(html, /class="[^"]*\bflex-wrap\b[^"]*"><span>Akun uji lokal:<\/span>/);
 
   assert.equal(html.includes('focus:outline-none'), false);
+  assert.equal(html.includes('focus-visible:ring-[#C84B24]/30'), false);
   assert.ok(html.includes('focus-visible:ring-2'));
+  assert.ok(html.includes('focus-visible:ring-[#C84B24]'));
   assert.equal(html.includes('—'), false);
   assertAllSvgsHidden(html);
 });
@@ -110,12 +121,14 @@ test('OrdersPage merender filter & Catat Pesanan Baru 44px, select 44px, kontras
     React.createElement(OrdersPage, { initialOrders: SAMPLE_ORDERS, initialMenus: SAMPLE_MENUS })
   );
 
-  assert.match(html, /class="[^"]*min-h-\[44px\][^"]*">[^<]*<svg[^>]*>.*?<\/svg>Catat Pesanan Baru/);
+  const newOrderBtnMatch = html.match(/<button\b([^>]*)>[^<]*<svg[^>]*>.*?<\/svg>Catat Pesanan Baru<\/button>/);
+  assert.ok(newOrderBtnMatch && newOrderBtnMatch[1].includes('min-h-[44px]'));
 
   for (const status of ['Semua', 'Menunggu', 'Diproses', 'Selesai', 'Dibatalkan']) {
-    assert.match(
-      html,
-      new RegExp(`class="[^"]*min-h-\\[44px\\][^"]*">${status}</button>`),
+    const filterBtnMatch = html.match(new RegExp(`<button\\b([^>]*)>${status}</button>`));
+    assert.ok(filterBtnMatch, `Tombol filter ${status} harus ada`);
+    assert.ok(
+      filterBtnMatch[1].includes('min-h-[44px]'),
       `Tombol filter ${status} harus memiliki min-h-[44px]`
     );
   }
@@ -124,7 +137,9 @@ test('OrdersPage merender filter & Catat Pesanan Baru 44px, select 44px, kontras
   assert.ok(selectMatch, 'Select ubah status harus ada');
   assert.ok(selectMatch[0].includes('min-h-[44px]'));
   assert.equal(selectMatch[0].includes('focus:outline-none'), false);
+  assert.equal(selectMatch[0].includes('focus-visible:ring-[#C84B24]/30'), false);
   assert.ok(selectMatch[0].includes('focus-visible:ring-2'));
+  assert.ok(selectMatch[0].includes('focus-visible:ring-[#C84B24]'));
 
   assert.equal(html.includes('#8C7E73'), false);
   assert.ok(html.includes('text-xs text-[#6B5E54]'));
@@ -166,11 +181,15 @@ test('OrdersPage modal kasir merender dialog aksesibel, max-h-[90dvh], label ter
     html,
     /aria-label="Tutup"[^>]*class="[^"]*min-h-\[44px\][^"]*min-w-\[44px\]|class="[^"]*min-h-\[44px\][^"]*min-w-\[44px\][^"]*"[^>]*aria-label="Tutup"/
   );
-  assert.match(html, /class="[^"]*min-h-\[44px\][^"]*">Batal<\/button>/);
-  assert.match(html, /<button[^>]*type="submit"[^>]*class="[^"]*min-h-\[44px\][^"]*"[^>]*>Simpan Pesanan<\/button>/);
+  const cancelBtnMatch = html.match(/<button\b([^>]*)>Batal<\/button>/);
+  assert.ok(cancelBtnMatch && cancelBtnMatch[1].includes('min-h-[44px]'));
+  const saveBtnMatch = html.match(/<button\b([^>]*)>Simpan Pesanan<\/button>/);
+  assert.ok(saveBtnMatch && saveBtnMatch[1].includes('type="submit"') && saveBtnMatch[1].includes('min-h-[44px]'));
 
   assert.equal(html.includes('focus:outline-none'), false);
+  assert.equal(html.includes('focus-visible:ring-[#C84B24]/30'), false);
   assert.ok(html.includes('focus-visible:ring-2'));
+  assert.ok(html.includes('focus-visible:ring-[#C84B24]'));
   assertAllSvgsHidden(html);
 });
 
@@ -190,16 +209,19 @@ test('DashboardPage dengan initialSummary merender MetricCard Menu Terlaris deng
 
   assert.match(html, /<div class="grid grid-cols-5 gap-1\.5 sm:gap-3 items-end h-44 pt-4">/);
   assert.ok(html.includes('text-[11px] sm:text-xs font-medium text-[#6B5E54]'));
+  assert.ok(html.includes('motion-reduce:transition-none'));
 
-  assert.match(
-    html,
-    /class="[^"]*min-h-\[44px\][^"]*inline-flex items-center[^"]*px-2[^"]*">Muat Ulang Insight<\/button>/
-  );
-  assert.match(
-    html,
-    /class="[^"]*min-h-\[44px\][^"]*inline-flex items-center[^"]*px-2[^"]*">Uji Fallback AI<\/button>/
-  );
+  for (const label of ['Muat Ulang Insight', 'Uji Fallback AI']) {
+    const aiBtnMatch = html.match(new RegExp(`<button\\b([^>]*)>${label}</button>`));
+    assert.ok(aiBtnMatch, `Tombol ${label} harus ada`);
+    assert.ok(aiBtnMatch[1].includes('min-h-[44px]'));
+    assert.ok(aiBtnMatch[1].includes('inline-flex'));
+    assert.ok(aiBtnMatch[1].includes('items-center'));
+    assert.ok(aiBtnMatch[1].includes('px-2'));
+  }
 
+  assert.equal(html.includes('#8C7E73'), false);
+  assert.equal(html.includes('focus:outline-none'), false);
   assert.equal(html.includes('—'), false);
   assertAllSvgsHidden(html);
 });
