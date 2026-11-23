@@ -32,9 +32,11 @@ export default function MenuManagementPage({ initialMenus = [], initialModalOpen
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState('');
   const lastTriggerRef = useRef(null);
+  const dialogRef = useRef(null);
+  const backdropMouseDownRef = useRef(false);
   const handleCloseModal = useCallback(() => setModalOpen(false), []);
 
-  useOverlayDialog(modalOpen, handleCloseModal, lastTriggerRef);
+  useOverlayDialog(modalOpen, handleCloseModal, lastTriggerRef, dialogRef);
 
   async function refresh() {
     const list = await menuApi.list();
@@ -170,6 +172,8 @@ export default function MenuManagementPage({ initialMenus = [], initialModalOpen
               <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#F1EAE0]">
                 <button
                   type="button"
+                  aria-label={`${menu.available ? 'Tersedia' : 'Habis'}, ubah status ${menu.name}`}
+                  aria-pressed={menu.available}
                   onClick={() => handleToggleAvailable(menu)}
                   className={getAvailabilityButtonClass(menu.available)}
                 >
@@ -237,6 +241,8 @@ export default function MenuManagementPage({ initialMenus = [], initialModalOpen
                     <td className="py-3.5 px-4">
                       <button
                         type="button"
+                        aria-label={`${menu.available ? 'Tersedia' : 'Habis'}, ubah status ${menu.name}`}
+                        aria-pressed={menu.available}
                         onClick={() => handleToggleAvailable(menu)}
                         className={getAvailabilityButtonClass(menu.available)}
                       >
@@ -273,15 +279,26 @@ export default function MenuManagementPage({ initialMenus = [], initialModalOpen
 
       {modalOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
-          onClick={handleCloseModal}
+          onMouseDown={(e) => {
+            backdropMouseDownRef.current = e.target === e.currentTarget;
+          }}
+          onClick={(e) => {
+            const startedOnBackdrop = backdropMouseDownRef.current;
+            backdropMouseDownRef.current = false;
+            if (e.target === e.currentTarget && startedOnBackdrop) {
+              handleCloseModal();
+            }
+          }}
+          className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 cursor-pointer"
         >
           <div
+            ref={dialogRef}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
             aria-labelledby="menu-modal-title"
             onClick={(e) => e.stopPropagation()}
-            className="bg-white border border-[#E7DFD3] rounded-2xl w-full max-w-md max-h-[90dvh] overflow-y-auto p-5 sm:p-6"
+            className="bg-white border border-[#E7DFD3] rounded-2xl w-full max-w-md max-h-[90dvh] overflow-y-auto p-5 sm:p-6 cursor-default"
           >
             <div className="flex items-center justify-between gap-3 mb-4">
               <h2 id="menu-modal-title" className="font-bold text-lg text-[#1F1915]">

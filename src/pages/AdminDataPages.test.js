@@ -132,6 +132,18 @@ test('MenuManagementPage merender kartu mobile (md:hidden) dan tabel desktop (hi
       assert.ok(getClassAttr(btn).includes('min-h-[44px]'), `${label} tombol wajib min-h-[44px]: ${btn}`);
     }
 
+    const availBtn = buttons.find((b) =>
+      b.includes('aria-label="Tersedia, ubah status Nasi Ayam Geprek Original"')
+    );
+    assert.ok(availBtn, `${label} tombol status Tersedia harus memiliki aria-label`);
+    assert.ok(availBtn.includes('aria-pressed="true"'), `${label} tombol Tersedia harus aria-pressed="true"`);
+
+    const unavailBtn = buttons.find((b) =>
+      b.includes('aria-label="Habis, ubah status Es Teh Manis"')
+    );
+    assert.ok(unavailBtn, `${label} tombol status Habis harus memiliki aria-label`);
+    assert.ok(unavailBtn.includes('aria-pressed="false"'), `${label} tombol Habis harus aria-pressed="false"`);
+
     for (const menuName of ['Nasi Ayam Geprek Original', 'Es Teh Manis']) {
       for (const action of ['Ubah', 'Hapus']) {
         const actionBtn = buttons.find((b) => b.includes(`aria-label="${action} ${menuName}"`));
@@ -160,6 +172,8 @@ test('MenuManagementPage modal merender dialog aksesibel dengan grid responsif, 
 
   assert.ok(html.includes('role="dialog"'));
   assert.ok(html.includes('aria-modal="true"'));
+  assert.ok(html.includes('tabindex="-1"'));
+  assert.ok(html.includes('cursor-pointer'));
   assert.match(html, /aria-labelledby="menu-modal-title"/);
   assert.ok(html.includes('id="menu-modal-title"'));
   assert.ok(html.includes('max-h-[90dvh]'));

@@ -131,6 +131,11 @@ test('OrdersPage merender filter & Catat Pesanan Baru 44px, select 44px, kontras
       filterBtnMatch[1].includes('min-h-[44px]'),
       `Tombol filter ${status} harus memiliki min-h-[44px]`
     );
+    const expectedPressed = status === 'Semua' ? 'true' : 'false';
+    assert.ok(
+      filterBtnMatch[1].includes(`aria-pressed="${expectedPressed}"`),
+      `Tombol filter ${status} harus memiliki aria-pressed="${expectedPressed}"`
+    );
   }
 
   const selectMatch = html.match(/<select[^>]*aria-label="Ubah status PK-1001"[^>]*>/);
@@ -148,7 +153,7 @@ test('OrdersPage merender filter & Catat Pesanan Baru 44px, select 44px, kontras
   assertAllSvgsHidden(html);
 });
 
-test('OrdersPage modal kasir merender dialog aksesibel, max-h-[90dvh], label terhubung, tombol -/+ 40px, dan aksi 44px', () => {
+test('OrdersPage modal kasir merender dialog aksesibel, max-h-[90dvh], label terhubung, tombol -/+ 44px, dan aksi 44px', () => {
   const html = renderToStaticMarkup(
     React.createElement(OrdersPage, {
       initialOrders: SAMPLE_ORDERS,
@@ -159,6 +164,8 @@ test('OrdersPage modal kasir merender dialog aksesibel, max-h-[90dvh], label ter
 
   assert.ok(html.includes('role="dialog"'));
   assert.ok(html.includes('aria-modal="true"'));
+  assert.ok(html.includes('tabindex="-1"'));
+  assert.ok(html.includes('cursor-pointer'));
   assert.match(html, /aria-labelledby="order-modal-title"/);
   assert.ok(html.includes('id="order-modal-title"'));
   assert.ok(html.includes('max-h-[90dvh]'));
@@ -170,11 +177,11 @@ test('OrdersPage modal kasir merender dialog aksesibel, max-h-[90dvh], label ter
 
   assert.match(
     html,
-    /aria-label="Kurangi Nasi Ayam Geprek Sambal Bawang"[^>]*class="[^"]*min-w-\[40px\][^"]*min-h-\[40px\]|class="[^"]*min-w-\[40px\][^"]*min-h-\[40px\][^"]*"[^>]*aria-label="Kurangi Nasi Ayam Geprek Sambal Bawang"/
+    /aria-label="Kurangi Nasi Ayam Geprek Sambal Bawang"[^>]*class="[^"]*min-w-\[44px\][^"]*min-h-\[44px\]|class="[^"]*min-w-\[44px\][^"]*min-h-\[44px\][^"]*"[^>]*aria-label="Kurangi Nasi Ayam Geprek Sambal Bawang"/
   );
   assert.match(
     html,
-    /aria-label="Tambah Nasi Ayam Geprek Sambal Bawang"[^>]*class="[^"]*min-w-\[40px\][^"]*min-h-\[40px\]|class="[^"]*min-w-\[40px\][^"]*min-h-\[40px\][^"]*"[^>]*aria-label="Tambah Nasi Ayam Geprek Sambal Bawang"/
+    /aria-label="Tambah Nasi Ayam Geprek Sambal Bawang"[^>]*class="[^"]*min-w-\[44px\][^"]*min-h-\[44px\]|class="[^"]*min-w-\[44px\][^"]*min-h-\[44px\][^"]*"[^>]*aria-label="Tambah Nasi Ayam Geprek Sambal Bawang"/
   );
 
   assert.match(
@@ -218,6 +225,9 @@ test('DashboardPage dengan initialSummary merender MetricCard Menu Terlaris deng
     assert.ok(aiBtnMatch[1].includes('inline-flex'));
     assert.ok(aiBtnMatch[1].includes('items-center'));
     assert.ok(aiBtnMatch[1].includes('px-2'));
+    if (label === 'Muat Ulang Insight') {
+      assert.ok(aiBtnMatch[1].includes('-ml-2 sm:ml-0'));
+    }
   }
 
   assert.equal(html.includes('#8C7E73'), false);

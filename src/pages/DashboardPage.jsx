@@ -142,7 +142,7 @@ export default function DashboardPage({ initialSummary = null } = {}) {
             <button
               type="button"
               onClick={() => loadAi(false)}
-              className="min-h-[44px] inline-flex items-center px-2 rounded-lg text-xs font-semibold text-[#C84B24] hover:underline cursor-pointer"
+              className="min-h-[44px] inline-flex items-center px-2 -ml-2 sm:ml-0 rounded-lg text-xs font-semibold text-[#C84B24] hover:underline cursor-pointer"
             >
               Muat Ulang Insight
             </button>
@@ -160,7 +160,7 @@ export default function DashboardPage({ initialSummary = null } = {}) {
         {loadingAi ? (
           <p className="text-sm text-[#6B5E54]">Menganalisis data transaksi...</p>
         ) : aiError ? (
-          <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-start gap-3">
+          <div role="alert" className="rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" aria-hidden="true" />
             <div>
               <p className="text-sm font-semibold text-amber-950">{aiError}</p>

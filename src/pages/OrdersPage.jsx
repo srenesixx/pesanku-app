@@ -22,9 +22,11 @@ export default function OrdersPage({
   const [draftCart, setDraftCart] = useState({});
   const [error, setError] = useState('');
   const newOrderTriggerRef = useRef(null);
+  const dialogRef = useRef(null);
+  const backdropMouseDownRef = useRef(false);
 
   const closeModal = useCallback(() => setModalOpen(false), []);
-  useOverlayDialog(modalOpen, closeModal, newOrderTriggerRef);
+  useOverlayDialog(modalOpen, closeModal, newOrderTriggerRef, dialogRef);
 
   async function refresh() {
     const [orderList, menuList] = await Promise.all([orderApi.list(), menuApi.list()]);
@@ -114,6 +116,7 @@ export default function OrdersPage({
           <button
             key={st}
             type="button"
+            aria-pressed={statusFilter === st}
             onClick={() => setStatusFilter(st)}
             className={`min-h-[44px] px-4 py-2 rounded-full text-sm font-semibold motion-reduce:transition-none transition-colors cursor-pointer ${
               statusFilter === st
@@ -187,15 +190,26 @@ export default function OrdersPage({
 
       {modalOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
-          onClick={closeModal}
+          onMouseDown={(e) => {
+            backdropMouseDownRef.current = e.target === e.currentTarget;
+          }}
+          onClick={(e) => {
+            const startedOnBackdrop = backdropMouseDownRef.current;
+            backdropMouseDownRef.current = false;
+            if (e.target === e.currentTarget && startedOnBackdrop) {
+              closeModal();
+            }
+          }}
+          className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 cursor-pointer"
         >
           <div
+            ref={dialogRef}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
             aria-labelledby="order-modal-title"
             onClick={(e) => e.stopPropagation()}
-            className="bg-white border border-[#E7DFD3] rounded-2xl w-full max-w-lg max-h-[90dvh] flex flex-col overflow-hidden"
+            className="bg-white border border-[#E7DFD3] rounded-2xl w-full max-w-lg max-h-[90dvh] flex flex-col overflow-hidden cursor-default"
           >
             <div className="flex items-center justify-between gap-3 px-5 sm:px-6 py-4 border-b border-[#E7DFD3]">
               <h2 id="order-modal-title" className="font-bold text-lg text-[#1F1915]">
@@ -257,7 +271,7 @@ export default function OrdersPage({
                             type="button"
                             aria-label={`Kurangi ${menu.name}`}
                             onClick={() => adjustDraftQty(menu.id, -1)}
-                            className="min-w-[40px] min-h-[40px] rounded-lg border border-[#E7DFD3] flex items-center justify-center hover:bg-[#FAF7F2] cursor-pointer motion-reduce:transition-none transition-colors"
+                            className="min-w-[44px] min-h-[44px] rounded-lg border border-[#E7DFD3] flex items-center justify-center hover:bg-[#FAF7F2] cursor-pointer motion-reduce:transition-none transition-colors"
                           >
                             <Minus className="w-4 h-4" aria-hidden="true" />
                           </button>
@@ -266,7 +280,7 @@ export default function OrdersPage({
                             type="button"
                             aria-label={`Tambah ${menu.name}`}
                             onClick={() => adjustDraftQty(menu.id, 1)}
-                            className="min-w-[40px] min-h-[40px] rounded-lg bg-[#C84B24] text-white flex items-center justify-center hover:bg-[#A93B19] cursor-pointer motion-reduce:transition-none transition-colors"
+                            className="min-w-[44px] min-h-[44px] rounded-lg bg-[#C84B24] text-white flex items-center justify-center hover:bg-[#A93B19] cursor-pointer motion-reduce:transition-none transition-colors"
                           >
                             <Plus className="w-4 h-4" aria-hidden="true" />
                           </button>

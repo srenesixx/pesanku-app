@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CheckCircle2,
   Flame,
@@ -105,8 +105,18 @@ export default function CustomerOrderPage({ onOpenLogin }) {
 
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const summaryTriggerRef = useRef(null);
+  const dialogRef = useRef(null);
+  const backdropMouseDownRef = useRef(false);
+  const lastOrderBannerRef = useRef(null);
+  const closeSheet = useCallback(() => setSheetOpen(false), []);
 
-  useOverlayDialog(sheetOpen && !isDesktop, () => setSheetOpen(false), summaryTriggerRef);
+  useOverlayDialog(sheetOpen && !isDesktop, closeSheet, summaryTriggerRef, dialogRef);
+
+  useEffect(() => {
+    if (!lastOrder) return;
+    lastOrderBannerRef.current?.scrollIntoView?.({ block: 'nearest' });
+    lastOrderBannerRef.current?.focus?.({ preventScroll: true });
+  }, [lastOrder]);
 
   useEffect(() => {
     if (isDesktop && sheetOpen) {
@@ -290,7 +300,12 @@ export default function CustomerOrderPage({ onOpenLogin }) {
         )}
 
         {lastOrder && (
-          <section className="mb-6 bg-emerald-50 border border-emerald-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <section
+            id="last-order-banner"
+            ref={lastOrderBannerRef}
+            tabIndex={-1}
+            className="mb-6 scroll-mt-20 bg-emerald-50 border border-emerald-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+          >
             <div className="flex items-start gap-3 min-w-0">
               <CheckCircle2 className="w-6 h-6 text-emerald-700 shrink-0 mt-0.5" aria-hidden="true" />
               <div className="min-w-0">
@@ -488,10 +503,21 @@ export default function CustomerOrderPage({ onOpenLogin }) {
         <>
           <div
             aria-hidden="true"
-            onClick={() => setSheetOpen(false)}
-            className="fixed inset-0 z-40 bg-black/40"
+            onMouseDown={(e) => {
+              backdropMouseDownRef.current = e.target === e.currentTarget;
+            }}
+            onClick={(e) => {
+              const startedOnBackdrop = backdropMouseDownRef.current;
+              backdropMouseDownRef.current = false;
+              if (e.target === e.currentTarget && startedOnBackdrop) {
+                closeSheet();
+              }
+            }}
+            className="fixed inset-0 z-40 bg-black/40 cursor-pointer"
           />
           <div
+            ref={dialogRef}
+            tabIndex={-1}
             id="customer-order-sheet"
             role="dialog"
             aria-modal="true"
@@ -511,7 +537,7 @@ export default function CustomerOrderPage({ onOpenLogin }) {
               onNotesChange={setNotes}
               onUpdateQty={updateQty}
               onSubmit={handleSubmitOrder}
-              onClose={() => setSheetOpen(false)}
+              onClose={closeSheet}
             />
           </div>
         </>

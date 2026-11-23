@@ -133,6 +133,7 @@ test('OrderSummaryPanel variant="sidebar" dengan item keranjang merender daftar 
   assert.ok(html.includes('Rp30.000'));
   assert.ok(html.includes('Total Pembayaran (3 Item)'));
   assert.ok(html.includes('Rp35.000'));
+  assert.ok(html.includes('-mx-1 px-1 py-0.5'));
   assert.ok(html.includes('aria-label="Hapus Ayam Geprek"'));
   assert.ok(html.includes('aria-label="Kurangi Ayam Geprek"'));
   assert.ok(html.includes('aria-label="Tambah Ayam Geprek"'));

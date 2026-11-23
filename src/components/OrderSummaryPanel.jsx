@@ -70,7 +70,7 @@ export default function OrderSummaryPanel({
           className={
             isSheet
               ? 'flex-1 min-h-0 overflow-y-auto divide-y divide-[#F1EAE0] px-4 sm:px-6'
-              : 'divide-y divide-[#F1EAE0] mb-4 max-h-72 overflow-y-auto'
+              : 'divide-y divide-[#F1EAE0] mb-4 max-h-72 overflow-y-auto -mx-1 px-1 py-0.5'
           }
         >
           {cartItems.map((item) => {
