@@ -22,7 +22,7 @@ export default function OrderSummaryPanel({
     <div
       className={
         isSheet
-          ? 'flex flex-col flex-1 min-h-0'
+          ? 'flex flex-col flex-1 min-h-0 overflow-y-auto'
           : 'bg-white border border-[#E7DFD3] rounded-2xl p-5'
       }
     >

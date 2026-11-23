@@ -17,23 +17,70 @@ import { useOverlayDialog } from '../hooks/useOverlayDialog.js';
 
 const CATEGORIES = ['Semua', 'Makanan', 'Paket', 'Minuman', 'Tambahan'];
 
+export function subscribeMediaQuery(
+  query,
+  onChange,
+  win = typeof window !== 'undefined' ? window : undefined
+) {
+  if (!win || typeof win.matchMedia !== 'function') {
+    return { matches: false, unsubscribe: () => {} };
+  }
+  const mediaQuery = win.matchMedia(query);
+  const handleChange = (event) => onChange(event.matches);
+  mediaQuery.addEventListener('change', handleChange);
+  return {
+    matches: Boolean(mediaQuery.matches),
+    unsubscribe: () => mediaQuery.removeEventListener('change', handleChange),
+  };
+}
+
+export async function submitCustomerOrder({
+  createOrder,
+  customerName,
+  notes,
+  cartItems,
+  setError,
+  setSubmitting,
+  setLastOrder,
+  setCart,
+  setCustomerName,
+  setNotes,
+  setSheetOpen,
+}) {
+  setError('');
+  setSubmitting(true);
+  try {
+    const created = await createOrder({
+      customerName,
+      notes,
+      items: cartItems,
+    });
+    setLastOrder(created);
+    setCart({});
+    setCustomerName('');
+    setNotes('');
+    setSheetOpen(false);
+    return created;
+  } catch (err) {
+    setError(err.message || 'Gagal mengirim pesanan.');
+    return null;
+  } finally {
+    setSubmitting(false);
+  }
+}
+
 function useMediaQuery(query) {
   const [matches, setMatches] = useState(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
       return false;
     }
-    return window.matchMedia(query).matches;
+    return Boolean(window.matchMedia(query).matches);
   });
 
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      return undefined;
-    }
-    const mediaQuery = window.matchMedia(query);
-    const update = () => setMatches(mediaQuery.matches);
-    update();
-    mediaQuery.addEventListener('change', update);
-    return () => mediaQuery.removeEventListener('change', update);
+    const { matches: currentMatches, unsubscribe } = subscribeMediaQuery(query, setMatches);
+    setMatches(currentMatches);
+    return unsubscribe;
   }, [query]);
 
   return matches;
@@ -107,24 +154,19 @@ export default function CustomerOrderPage({ onOpenLogin }) {
 
   async function handleSubmitOrder(e) {
     e.preventDefault();
-    setError('');
-    setSubmitting(true);
-    try {
-      const created = await orderApi.create({
-        customerName,
-        notes,
-        items: cartItems,
-      });
-      setLastOrder(created);
-      setCart({});
-      setCustomerName('');
-      setNotes('');
-      setSheetOpen(false);
-    } catch (err) {
-      setError(err.message || 'Gagal mengirim pesanan.');
-    } finally {
-      setSubmitting(false);
-    }
+    await submitCustomerOrder({
+      createOrder: orderApi.create,
+      customerName,
+      notes,
+      cartItems,
+      setError,
+      setSubmitting,
+      setLastOrder,
+      setCart,
+      setCustomerName,
+      setNotes,
+      setSheetOpen,
+    });
   }
 
   async function handleTrack(e) {
