@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import { menuApi } from '../services/api.js';
 import { formatRupiah } from '../utils/format.js';
@@ -32,8 +32,9 @@ export default function MenuManagementPage({ initialMenus = [], initialModalOpen
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState('');
   const lastTriggerRef = useRef(null);
+  const handleCloseModal = useCallback(() => setModalOpen(false), []);
 
-  useOverlayDialog(modalOpen, () => setModalOpen(false), lastTriggerRef);
+  useOverlayDialog(modalOpen, handleCloseModal, lastTriggerRef);
 
   async function refresh() {
     const list = await menuApi.list();
@@ -273,7 +274,7 @@ export default function MenuManagementPage({ initialMenus = [], initialModalOpen
       {modalOpen && (
         <div
           className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
-          onClick={() => setModalOpen(false)}
+          onClick={handleCloseModal}
         >
           <div
             role="dialog"
@@ -289,7 +290,7 @@ export default function MenuManagementPage({ initialMenus = [], initialModalOpen
               <button
                 type="button"
                 aria-label="Tutup"
-                onClick={() => setModalOpen(false)}
+                onClick={handleCloseModal}
                 className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl text-[#6B5E54] hover:text-[#1F1915] hover:bg-[#FAF7F2] cursor-pointer motion-reduce:transition-none transition-colors"
               >
                 <X className="w-5 h-5" aria-hidden="true" />
@@ -384,7 +385,7 @@ export default function MenuManagementPage({ initialMenus = [], initialModalOpen
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setModalOpen(false)}
+                  onClick={handleCloseModal}
                   className="min-h-[44px] px-4 py-2.5 rounded-xl border border-[#E7DFD3] text-sm font-semibold text-[#6B5E54] hover:text-[#1F1915] hover:bg-[#FAF7F2] cursor-pointer motion-reduce:transition-none transition-colors"
                 >
                   Batal
