@@ -4,8 +4,15 @@ import { orderApi } from '../services/api.js';
 import { exportTransactionsCSV, formatDateTime, formatRupiah } from '../utils/format.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 
-export default function ReportsPage() {
-  const [orders, setOrders] = useState([]);
+const FILTER_INPUT_CLASS =
+  'w-full min-h-[44px] px-3 py-2 rounded-xl border border-[#E7DFD3] bg-white text-sm text-[#1F1915] focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24]/30';
+
+function formatOrderItems(items) {
+  return (items || []).map((i) => `${i.name} ×${i.qty}`).join(', ');
+}
+
+export default function ReportsPage({ initialOrders = [] } = {}) {
+  const [orders, setOrders] = useState(initialOrders);
   const [statusFilter, setStatusFilter] = useState('Semua');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -43,38 +50,47 @@ export default function ReportsPage() {
           type="button"
           onClick={() => exportTransactionsCSV(filtered)}
           disabled={filtered.length === 0}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1F1915] hover:bg-[#352C26] disabled:opacity-50 text-white text-sm font-bold cursor-pointer"
+          className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 rounded-xl bg-[#1F1915] hover:bg-[#352C26] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold cursor-pointer motion-reduce:transition-none transition-colors"
         >
-          <Download className="w-4 h-4" />
+          <Download className="w-4 h-4" aria-hidden="true" />
           Ekspor CSV
         </button>
       </div>
 
       <div className="bg-white border border-[#E7DFD3] rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-[#6B5E54] mb-1">Dari Tanggal</label>
+          <label htmlFor="report-start-date" className="block text-xs font-semibold text-[#6B5E54] mb-1">
+            Dari Tanggal
+          </label>
           <input
+            id="report-start-date"
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl border border-[#E7DFD3] text-sm focus:outline-none focus:border-[#C84B24]"
+            className={FILTER_INPUT_CLASS}
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-[#6B5E54] mb-1">Sampai Tanggal</label>
+          <label htmlFor="report-end-date" className="block text-xs font-semibold text-[#6B5E54] mb-1">
+            Sampai Tanggal
+          </label>
           <input
+            id="report-end-date"
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl border border-[#E7DFD3] text-sm focus:outline-none focus:border-[#C84B24]"
+            className={FILTER_INPUT_CLASS}
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-[#6B5E54] mb-1">Status</label>
+          <label htmlFor="report-status" className="block text-xs font-semibold text-[#6B5E54] mb-1">
+            Status
+          </label>
           <select
+            id="report-status"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl border border-[#E7DFD3] text-sm bg-white focus:outline-none focus:border-[#C84B24]"
+            className={FILTER_INPUT_CLASS}
           >
             {['Semua', 'Menunggu', 'Diproses', 'Selesai', 'Dibatalkan'].map((st) => (
               <option key={st} value={st}>
@@ -106,7 +122,45 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <div className="bg-white border border-[#E7DFD3] rounded-2xl overflow-hidden">
+      <div className="space-y-3 md:hidden">
+        {filtered.length === 0 ? (
+          <div className="bg-white border border-[#E7DFD3] rounded-2xl p-6 text-center text-sm text-[#6B5E54]">
+            Tidak ada transaksi pada filter yang dipilih.
+          </div>
+        ) : (
+          filtered.map((order) => (
+            <article
+              key={order.id}
+              className="bg-white border border-[#E7DFD3] rounded-2xl p-4 space-y-2.5"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
+                  <span className="font-mono font-bold text-sm text-[#1F1915]">{order.code}</span>
+                  <StatusBadge status={order.status} />
+                </div>
+                <span className="font-bold text-sm text-[#1F1915] tabular-nums shrink-0">
+                  {formatRupiah(order.totalAmount)}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                <p className="font-semibold text-sm text-[#1F1915] break-words">
+                  {order.customerName}
+                </p>
+                <p className="text-xs text-[#6B5E54] whitespace-nowrap">
+                  {formatDateTime(order.createdAt)}
+                </p>
+              </div>
+
+              <p className="text-xs text-[#6B5E54] break-words leading-relaxed">
+                {formatOrderItems(order.items)}
+              </p>
+            </article>
+          ))
+        )}
+      </div>
+
+      <div className="hidden md:block bg-white border border-[#E7DFD3] rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -135,12 +189,12 @@ export default function ReportsPage() {
                     </td>
                     <td className="py-3.5 px-4 font-semibold text-[#1F1915]">{order.customerName}</td>
                     <td className="py-3.5 px-4 text-xs text-[#6B5E54]">
-                      {order.items.map((i) => `${i.name} ×${i.qty}`).join(', ')}
+                      {formatOrderItems(order.items)}
                     </td>
                     <td className="py-3.5 px-4">
                       <StatusBadge status={order.status} />
                     </td>
-                    <td className="py-3.5 px-4 text-right font-bold tabular-nums">
+                    <td className="py-3.5 px-4 text-right font-bold tabular-nums text-[#1F1915]">
                       {formatRupiah(order.totalAmount)}
                     </td>
                   </tr>

@@ -23,25 +23,25 @@ export default function LoginPage({ onSuccess, onBack }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] flex flex-col justify-center px-4 py-10">
+    <main className="min-h-screen bg-[#FAF7F2] flex flex-col justify-center px-4 py-8 sm:py-10">
       <div className="w-full max-w-md mx-auto">
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-2 text-sm font-medium text-[#6B5E54] hover:text-[#1F1915] mb-6 cursor-pointer"
+          className="min-h-[44px] inline-flex items-center gap-2 px-2 -ml-2 rounded-xl text-sm font-medium text-[#6B5E54] hover:text-[#1F1915] mb-5 cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           Kembali ke Halaman Pembeli
         </button>
 
-        <div className="bg-white border border-[#E7DFD3] rounded-2xl p-7 shadow-xs">
+        <div className="bg-white border border-[#E7DFD3] rounded-2xl p-5 sm:p-7 shadow-xs">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-11 h-11 rounded-xl bg-[#C84B24] text-white flex items-center justify-center shrink-0">
-              <UtensilsCrossed className="w-5 h-5" />
+              <UtensilsCrossed className="w-5 h-5" aria-hidden="true" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-[#1F1915] leading-tight">Masuk Pemilik</h1>
-              <p className="text-sm text-[#6B5E54]">Warung Nasi Ayam Mak Nyus — PesanKu</p>
+              <p className="text-sm text-[#6B5E54]">Warung Nasi Ayam Mak Nyus (PesanKu)</p>
             </div>
           </div>
 
@@ -51,14 +51,17 @@ export default function LoginPage({ onSuccess, onBack }) {
                 Email Pemilik
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-[#6B5E54] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Mail
+                  className="w-4 h-4 text-[#6B5E54] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                  aria-hidden="true"
+                />
                 <input
                   id="login-email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="pemilik@maknyus.id"
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[#E7DFD3] bg-[#FAF7F2]/50 text-sm focus:outline-none focus:ring-2 focus:ring-[#C84B24]/30 focus:border-[#C84B24]"
+                  className="w-full min-h-[44px] pl-10 pr-3.5 py-2.5 rounded-xl border border-[#E7DFD3] bg-[#FAF7F2]/50 text-sm focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24] focus-visible:ring-offset-1"
                 />
               </div>
             </div>
@@ -68,14 +71,17 @@ export default function LoginPage({ onSuccess, onBack }) {
                 Kata Sandi
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-[#6B5E54] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Lock
+                  className="w-4 h-4 text-[#6B5E54] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                  aria-hidden="true"
+                />
                 <input
                   id="login-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Masukkan kata sandi"
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[#E7DFD3] bg-[#FAF7F2]/50 text-sm focus:outline-none focus:ring-2 focus:ring-[#C84B24]/30 focus:border-[#C84B24]"
+                  className="w-full min-h-[44px] pl-10 pr-3.5 py-2.5 rounded-xl border border-[#E7DFD3] bg-[#FAF7F2]/50 text-sm focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24] focus-visible:ring-offset-1"
                 />
               </div>
             </div>
@@ -92,13 +98,13 @@ export default function LoginPage({ onSuccess, onBack }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 px-4 rounded-xl bg-[#C84B24] hover:bg-[#A93B19] disabled:opacity-60 text-white font-semibold text-sm transition-colors cursor-pointer"
+              className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-[#C84B24] hover:bg-[#A93B19] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-[#C84B24] text-white font-semibold text-sm motion-reduce:transition-none transition-colors cursor-pointer"
             >
               {loading ? 'Memeriksa akun...' : 'Masuk ke Dashboard'}
             </button>
           </form>
 
-          <div className="mt-5 pt-4 border-t border-[#E7DFD3] text-xs text-[#6B5E54] flex items-center justify-between gap-2">
+          <div className="mt-5 pt-4 border-t border-[#E7DFD3] text-xs text-[#6B5E54] flex flex-wrap items-center justify-between gap-2">
             <span>Akun uji lokal:</span>
             <button
               type="button"
@@ -107,13 +113,13 @@ export default function LoginPage({ onSuccess, onBack }) {
                 setPassword('maknyus2026');
                 setError('');
               }}
-              className="font-semibold text-[#C84B24] hover:underline cursor-pointer"
+              className="min-h-[44px] inline-flex items-center px-2 -mx-2 rounded-lg font-semibold text-[#C84B24] hover:underline cursor-pointer"
             >
               Isi otomatis (pemilik@maknyus.id)
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

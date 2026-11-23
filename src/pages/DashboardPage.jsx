@@ -10,8 +10,8 @@ import {
 import { reportApi } from '../services/api.js';
 import { formatRupiah, formatShortDate } from '../utils/format.js';
 
-export default function DashboardPage() {
-  const [summary, setSummary] = useState(null);
+export default function DashboardPage({ initialSummary = null } = {}) {
+  const [summary, setSummary] = useState(initialSummary);
   const [aiInsight, setAiInsight] = useState(null);
   const [aiError, setAiError] = useState('');
   const [loadingAi, setLoadingAi] = useState(true);
@@ -31,9 +31,11 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    reportApi.getDashboardSummary().then(setSummary);
+    if (!initialSummary) {
+      reportApi.getDashboardSummary().then(setSummary);
+    }
     loadAi(false);
-  }, []);
+  }, [initialSummary]);
 
   if (!summary) {
     return <p className="text-sm text-[#6B5E54]">Memuat ringkasan penjualan...</p>;
@@ -80,21 +82,21 @@ export default function DashboardPage() {
           <h2 className="font-bold text-base text-[#1F1915] mb-1">Tren Penjualan 5 Hari Terakhir</h2>
           <p className="text-xs text-[#6B5E54] mb-5">Total pendapatan harian dari transaksi yang valid.</p>
 
-          <div className="grid grid-cols-5 gap-3 items-end h-44 pt-4">
+          <div className="grid grid-cols-5 gap-1.5 sm:gap-3 items-end h-44 pt-4">
             {summary.dailySales.map((day) => {
               const heightPct = Math.max(Math.round((day.revenue / maxDaily) * 100), day.revenue > 0 ? 12 : 4);
               return (
-                <div key={day.date} className="flex flex-col items-center h-full justify-end gap-2">
+                <div key={day.date} className="flex flex-col items-center h-full justify-end gap-2 min-w-0">
                   <span className="text-[11px] font-semibold text-[#6B5E54] tabular-nums">
                     {day.revenue > 0 ? `${Math.round(day.revenue / 1000)}rb` : '0'}
                   </span>
                   <div className="w-full max-w-12 bg-[#FAF7F2] rounded-t-xl h-28 flex items-end overflow-hidden border border-[#F1EAE0]">
                     <div
-                      className="w-full bg-[#C84B24] rounded-t-lg transition-all"
+                      className="w-full bg-[#C84B24] rounded-t-lg motion-reduce:transition-none transition-all"
                       style={{ height: `${heightPct}%` }}
                     />
                   </div>
-                  <span className="text-xs font-medium text-[#6B5E54]">{formatShortDate(day.date)}</span>
+                  <span className="text-[11px] sm:text-xs font-medium text-[#6B5E54]">{formatShortDate(day.date)}</span>
                 </div>
               );
             })}
@@ -133,22 +135,22 @@ export default function DashboardPage() {
       <section className="bg-white border border-[#E7DFD3] rounded-2xl p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#C84B24]" />
+            <Sparkles className="w-5 h-5 text-[#C84B24]" aria-hidden="true" />
             <h2 className="font-bold text-base text-[#1F1915]">AI Insight Penjualan</h2>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
             <button
               type="button"
               onClick={() => loadAi(false)}
-              className="text-xs font-semibold text-[#C84B24] hover:underline cursor-pointer"
+              className="min-h-[44px] inline-flex items-center px-2 -ml-2 sm:ml-0 rounded-lg text-xs font-semibold text-[#C84B24] hover:underline cursor-pointer"
             >
               Muat Ulang Insight
             </button>
-            <span className="text-[#E7DFD3]">|</span>
+            <span className="text-[#E7DFD3]" aria-hidden="true">|</span>
             <button
               type="button"
               onClick={() => loadAi(true)}
-              className="text-xs font-medium text-[#6B5E54] hover:text-[#1F1915] cursor-pointer"
+              className="min-h-[44px] inline-flex items-center px-2 rounded-lg text-xs font-medium text-[#6B5E54] hover:text-[#1F1915] cursor-pointer"
             >
               Uji Fallback AI
             </button>
@@ -158,8 +160,8 @@ export default function DashboardPage() {
         {loadingAi ? (
           <p className="text-sm text-[#6B5E54]">Menganalisis data transaksi...</p>
         ) : aiError ? (
-          <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+          <div role="alert" className="rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" aria-hidden="true" />
             <div>
               <p className="text-sm font-semibold text-amber-950">{aiError}</p>
               <p className="text-xs text-amber-800 mt-1">
@@ -190,9 +192,9 @@ function MetricCard({ icon: Icon, label, value, sub, accent = 'text-[#1F1915]' }
     <div className="bg-white border border-[#E7DFD3] rounded-2xl p-4">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold text-[#6B5E54]">{label}</span>
-        <Icon className="w-4 h-4 text-[#6B5E54]" />
+        <Icon className="w-4 h-4 text-[#6B5E54]" aria-hidden="true" />
       </div>
-      <p className={`text-xl font-extrabold tracking-tight tabular-nums truncate ${accent}`}>{value}</p>
+      <p className={`text-xl font-extrabold tracking-tight tabular-nums line-clamp-2 break-words ${accent}`}>{value}</p>
       {sub && <p className="text-xs text-[#6B5E54] mt-0.5">{sub}</p>}
     </div>
   );
