@@ -1,21 +1,30 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Minus, Plus, X } from 'lucide-react';
 import { menuApi, orderApi } from '../services/api.js';
 import { calculateOrderTotals, formatDateTime, formatRupiah } from '../utils/format.js';
 import StatusBadge from '../components/StatusBadge.jsx';
+import { useOverlayDialog } from '../hooks/useOverlayDialog.js';
 
 const STATUS_FILTERS = ['Semua', 'Menunggu', 'Diproses', 'Selesai', 'Dibatalkan'];
 const STATUS_OPTIONS = ['Menunggu', 'Diproses', 'Selesai', 'Dibatalkan'];
 
-export default function OrdersPage() {
-  const [orders, setOrders] = useState([]);
-  const [menus, setMenus] = useState([]);
+export default function OrdersPage({
+  initialOrders = [],
+  initialMenus = [],
+  initialModalOpen = false,
+} = {}) {
+  const [orders, setOrders] = useState(initialOrders);
+  const [menus, setMenus] = useState(() => initialMenus.filter((m) => m.available));
   const [statusFilter, setStatusFilter] = useState('Semua');
-  const [modalOpen, setModalOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(initialModalOpen);
   const [customerName, setCustomerName] = useState('');
   const [notes, setNotes] = useState('');
   const [draftCart, setDraftCart] = useState({});
   const [error, setError] = useState('');
+  const newOrderTriggerRef = useRef(null);
+
+  const closeModal = useCallback(() => setModalOpen(false), []);
+  useOverlayDialog(modalOpen, closeModal, newOrderTriggerRef);
 
   async function refresh() {
     const [orderList, menuList] = await Promise.all([orderApi.list(), menuApi.list()]);
@@ -87,14 +96,15 @@ export default function OrdersPage() {
           </p>
         </div>
         <button
+          ref={newOrderTriggerRef}
           type="button"
           onClick={() => {
             setError('');
             setModalOpen(true);
           }}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#C84B24] hover:bg-[#A93B19] text-white text-sm font-bold cursor-pointer"
+          className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 rounded-xl bg-[#C84B24] hover:bg-[#A93B19] text-white text-sm font-bold cursor-pointer motion-reduce:transition-none transition-colors"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4" aria-hidden="true" />
           Catat Pesanan Baru
         </button>
       </div>
@@ -105,7 +115,7 @@ export default function OrdersPage() {
             key={st}
             type="button"
             onClick={() => setStatusFilter(st)}
-            className={`px-3.5 py-1.5 rounded-full text-sm font-semibold transition-colors cursor-pointer ${
+            className={`min-h-[44px] px-4 py-2 rounded-full text-sm font-semibold motion-reduce:transition-none transition-colors cursor-pointer ${
               statusFilter === st
                 ? 'bg-[#1F1915] text-white'
                 : 'bg-white border border-[#E7DFD3] text-[#6B5E54] hover:text-[#1F1915]'
@@ -138,7 +148,7 @@ export default function OrdersPage() {
                   {order.items.map((item, idx) => (
                     <li key={`${order.id}-${idx}`} className="tabular-nums">
                       {item.name} × {item.qty}{' '}
-                      <span className="text-xs text-[#8C7E73]">({formatRupiah(item.subtotal)})</span>
+                      <span className="text-xs text-[#6B5E54]">({formatRupiah(item.subtotal)})</span>
                     </li>
                   ))}
                 </ul>
@@ -161,7 +171,7 @@ export default function OrdersPage() {
                   aria-label={`Ubah status ${order.code}`}
                   value={order.status}
                   onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                  className="px-3 py-2 rounded-xl border border-[#E7DFD3] bg-[#FAF7F2] text-sm font-semibold text-[#1F1915] focus:outline-none focus:border-[#C84B24] cursor-pointer"
+                  className="min-h-[44px] px-3 py-2 rounded-xl border border-[#E7DFD3] bg-[#FAF7F2] text-sm font-semibold text-[#1F1915] focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24]/30 cursor-pointer"
                 >
                   {STATUS_OPTIONS.map((st) => (
                     <option key={st} value={st}>
@@ -176,40 +186,57 @@ export default function OrdersPage() {
       </div>
 
       {modalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white border border-[#E7DFD3] rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E7DFD3]">
-              <h2 className="font-bold text-lg text-[#1F1915]">Catat Pesanan Baru (Kasir)</h2>
+        <div
+          className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+          onClick={closeModal}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="order-modal-title"
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white border border-[#E7DFD3] rounded-2xl w-full max-w-lg max-h-[90dvh] flex flex-col overflow-hidden"
+          >
+            <div className="flex items-center justify-between gap-3 px-5 sm:px-6 py-4 border-b border-[#E7DFD3]">
+              <h2 id="order-modal-title" className="font-bold text-lg text-[#1F1915]">
+                Catat Pesanan Baru (Kasir)
+              </h2>
               <button
                 type="button"
                 aria-label="Tutup"
-                onClick={() => setModalOpen(false)}
-                className="p-1 rounded-lg text-[#6B5E54] hover:bg-[#FAF7F2] cursor-pointer"
+                onClick={closeModal}
+                className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-xl text-[#6B5E54] hover:text-[#1F1915] hover:bg-[#FAF7F2] cursor-pointer motion-reduce:transition-none transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateOrder} className="p-6 space-y-4 overflow-y-auto" noValidate>
+            <form onSubmit={handleCreateOrder} className="p-5 sm:p-6 space-y-4 overflow-y-auto" noValidate>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-[#1F1915] mb-1">Nama Pelanggan *</label>
+                  <label htmlFor="order-customer-name" className="block text-xs font-semibold text-[#1F1915] mb-1">
+                    Nama Pelanggan *
+                  </label>
                   <input
+                    id="order-customer-name"
                     type="text"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     placeholder="Contoh: Pembeli Meja 2"
-                    className="w-full px-3 py-2 rounded-xl border border-[#E7DFD3] text-sm focus:outline-none focus:border-[#C84B24]"
+                    className="w-full min-h-[44px] px-3 py-2 rounded-xl border border-[#E7DFD3] text-sm text-[#1F1915] placeholder:text-[#6B5E54] focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24]/30"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-[#1F1915] mb-1">Catatan</label>
+                  <label htmlFor="order-notes" className="block text-xs font-semibold text-[#1F1915] mb-1">
+                    Catatan
+                  </label>
                   <input
+                    id="order-notes"
                     type="text"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Opsional..."
-                    className="w-full px-3 py-2 rounded-xl border border-[#E7DFD3] text-sm focus:outline-none focus:border-[#C84B24]"
+                    className="w-full min-h-[44px] px-3 py-2 rounded-xl border border-[#E7DFD3] text-sm text-[#1F1915] placeholder:text-[#6B5E54] focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24]/30"
                   />
                 </div>
               </div>
@@ -228,18 +255,20 @@ export default function OrdersPage() {
                         <div className="inline-flex items-center gap-2 shrink-0">
                           <button
                             type="button"
+                            aria-label={`Kurangi ${menu.name}`}
                             onClick={() => adjustDraftQty(menu.id, -1)}
-                            className="w-7 h-7 rounded-lg border border-[#E7DFD3] flex items-center justify-center hover:bg-[#FAF7F2] cursor-pointer"
+                            className="min-w-[40px] min-h-[40px] rounded-lg border border-[#E7DFD3] flex items-center justify-center hover:bg-[#FAF7F2] cursor-pointer motion-reduce:transition-none transition-colors"
                           >
-                            <Minus className="w-3.5 h-3.5" />
+                            <Minus className="w-4 h-4" aria-hidden="true" />
                           </button>
                           <span className="w-6 text-center text-sm font-bold tabular-nums">{qty}</span>
                           <button
                             type="button"
+                            aria-label={`Tambah ${menu.name}`}
                             onClick={() => adjustDraftQty(menu.id, 1)}
-                            className="w-7 h-7 rounded-lg bg-[#C84B24] text-white flex items-center justify-center hover:bg-[#A93B19] cursor-pointer"
+                            className="min-w-[40px] min-h-[40px] rounded-lg bg-[#C84B24] text-white flex items-center justify-center hover:bg-[#A93B19] cursor-pointer motion-reduce:transition-none transition-colors"
                           >
-                            <Plus className="w-3.5 h-3.5" />
+                            <Plus className="w-4 h-4" aria-hidden="true" />
                           </button>
                         </div>
                       </div>
@@ -264,14 +293,14 @@ export default function OrdersPage() {
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-[#E7DFD3] text-sm font-semibold text-[#6B5E54] cursor-pointer"
+                  onClick={closeModal}
+                  className="min-h-[44px] px-4 py-2 rounded-xl border border-[#E7DFD3] text-sm font-semibold text-[#6B5E54] hover:text-[#1F1915] hover:bg-[#FAF7F2] cursor-pointer motion-reduce:transition-none transition-colors"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-[#C84B24] hover:bg-[#A93B19] text-white text-sm font-bold cursor-pointer"
+                  className="min-h-[44px] px-4 py-2 rounded-xl bg-[#C84B24] hover:bg-[#A93B19] text-white text-sm font-bold cursor-pointer motion-reduce:transition-none transition-colors"
                 >
                   Simpan Pesanan
                 </button>
