@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { setupOverlayListeners } from './useOverlayDialog.js';
+import { setupOverlayListeners } from '../../src/hooks/useOverlayDialog.js';
 
 test('menutup dialog saat Escape ditekan, mengunci scroll, lalu memulihkan overflow dan fokus saat cleanup', () => {
   const listeners = {};
@@ -146,25 +146,21 @@ test('menjebak Tab dari elemen terakhir ke pertama dan Shift+Tab dari pertama at
     win,
   });
 
-  // Shift+Tab dari containerEl melompat ke elemen fokus terakhir (mengabaikan disabledBtn)
   let prevented = false;
   listeners.keydown({ key: 'Tab', shiftKey: true, preventDefault() { prevented = true; } });
   assert.equal(prevented, true);
   assert.equal(doc.activeElement, lastBtn);
 
-  // Tab dari elemen terakhir membungkus ke elemen pertama
   prevented = false;
   listeners.keydown({ key: 'Tab', shiftKey: false, preventDefault() { prevented = true; } });
   assert.equal(prevented, true);
   assert.equal(doc.activeElement, firstBtn);
 
-  // Shift+Tab dari elemen pertama membungkus ke elemen terakhir
   prevented = false;
   listeners.keydown({ key: 'Tab', shiftKey: true, preventDefault() { prevented = true; } });
   assert.equal(prevented, true);
   assert.equal(doc.activeElement, lastBtn);
 
-  // Tab dari elemen tengah tidak dicegat
   doc.activeElement = middleInput;
   prevented = false;
   listeners.keydown({ key: 'Tab', shiftKey: false, preventDefault() { prevented = true; } });

@@ -1,124 +1,84 @@
 import { useState } from 'react';
-import { ArrowLeft, Lock, Mail, UtensilsCrossed } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { authApi } from '../services/api.js';
+import { validateLoginInput } from '../utils/validation.js';
+import { Button } from '../components/atoms/index.js';
+import { LoginFormCard } from '../components/organisms/index.js';
 
 export default function LoginPage({ onSuccess, onBack }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  function handleEmailChange(value) {
+    setEmail(value);
+    if (fieldErrors.email) {
+      setFieldErrors((prev) => ({ ...prev, email: '' }));
+    }
+  }
+
+  function handlePasswordChange(value) {
+    setPassword(value);
+    if (fieldErrors.password) {
+      setFieldErrors((prev) => ({ ...prev, password: '' }));
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+    const validation = validateLoginInput({ email, password });
+    if (!validation.valid) {
+      setFieldErrors(validation.errors);
+      setError(validation.message);
+      return;
+    }
+    setFieldErrors({});
     setLoading(true);
     try {
       const session = await authApi.login(email, password);
       onSuccess(session);
     } catch (err) {
+      if (err.errors) setFieldErrors(err.errors);
       setError(err.message || 'Gagal masuk. Silakan coba lagi.');
     } finally {
       setLoading(false);
     }
   }
 
+  function handleAutofill() {
+    setEmail('pemilik@maknyus.id');
+    setPassword('maknyus2026');
+    setFieldErrors({});
+    setError('');
+  }
+
   return (
     <main className="min-h-screen bg-[#FAF7F2] flex flex-col justify-center px-4 py-8 sm:py-10">
       <div className="w-full max-w-md mx-auto">
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="inline"
           onClick={onBack}
-          className="min-h-[44px] inline-flex items-center gap-2 px-2 -ml-2 rounded-xl text-sm font-medium text-[#6B5E54] hover:text-[#1F1915] mb-5 cursor-pointer"
+          className="-ml-2 mb-5 font-medium hover:bg-transparent"
         >
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
           Kembali ke Halaman Pembeli
-        </button>
+        </Button>
 
-        <div className="bg-white border border-[#E7DFD3] rounded-2xl p-5 sm:p-7 shadow-xs">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-11 h-11 rounded-xl bg-[#C84B24] text-white flex items-center justify-center shrink-0">
-              <UtensilsCrossed className="w-5 h-5" aria-hidden="true" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-[#1F1915] leading-tight">Masuk Pemilik</h1>
-              <p className="text-sm text-[#6B5E54]">Warung Nasi Ayam Mak Nyus (PesanKu)</p>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            <div>
-              <label htmlFor="login-email" className="block text-sm font-semibold text-[#1F1915] mb-1.5">
-                Email Pemilik
-              </label>
-              <div className="relative">
-                <Mail
-                  className="w-4 h-4 text-[#6B5E54] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                  aria-hidden="true"
-                />
-                <input
-                  id="login-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="pemilik@maknyus.id"
-                  className="w-full min-h-[44px] pl-10 pr-3.5 py-2.5 rounded-xl border border-[#E7DFD3] bg-[#FAF7F2]/50 text-sm focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24] focus-visible:ring-offset-1"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="login-password" className="block text-sm font-semibold text-[#1F1915] mb-1.5">
-                Kata Sandi
-              </label>
-              <div className="relative">
-                <Lock
-                  className="w-4 h-4 text-[#6B5E54] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                  aria-hidden="true"
-                />
-                <input
-                  id="login-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Masukkan kata sandi"
-                  className="w-full min-h-[44px] pl-10 pr-3.5 py-2.5 rounded-xl border border-[#E7DFD3] bg-[#FAF7F2]/50 text-sm focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24] focus-visible:ring-offset-1"
-                />
-              </div>
-            </div>
-
-            {error && (
-              <div
-                role="alert"
-                className="rounded-xl bg-rose-50 border border-rose-200 px-3.5 py-2.5 text-sm text-rose-800"
-              >
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-[#C84B24] hover:bg-[#A93B19] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-[#C84B24] text-white font-semibold text-sm motion-reduce:transition-none transition-colors cursor-pointer"
-            >
-              {loading ? 'Memeriksa akun...' : 'Masuk ke Dashboard'}
-            </button>
-          </form>
-
-          <div className="mt-5 pt-4 border-t border-[#E7DFD3] text-xs text-[#6B5E54] flex flex-wrap items-center justify-between gap-2">
-            <span>Akun uji lokal:</span>
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('pemilik@maknyus.id');
-                setPassword('maknyus2026');
-                setError('');
-              }}
-              className="min-h-[44px] inline-flex items-center px-2 -mx-2 rounded-lg font-semibold text-[#C84B24] hover:underline cursor-pointer"
-            >
-              Isi otomatis (pemilik@maknyus.id)
-            </button>
-          </div>
-        </div>
+        <LoginFormCard
+          email={email}
+          password={password}
+          fieldErrors={fieldErrors}
+          error={error}
+          loading={loading}
+          onEmailChange={handleEmailChange}
+          onPasswordChange={handlePasswordChange}
+          onSubmit={handleSubmit}
+          onAutofill={handleAutofill}
+        />
       </div>
     </main>
   );

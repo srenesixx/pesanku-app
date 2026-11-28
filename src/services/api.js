@@ -1,181 +1,53 @@
-import { calculateOrderTotals, validateOrderItems } from '../utils/format.js';
+import { calculateOrderTotals } from '../utils/format.js';
+import { JWT_TTL_SECONDS, createJwt, parseJwt, verifyJwt } from '../utils/jwt.js';
+import {
+  validateCustomerOrderInput,
+  validateLoginInput,
+  validateMenuInput,
+  validateTrackCode,
+} from '../utils/validation.js';
+import { SEED_MENUS, SEED_ORDERS } from './seedData.js';
+import {
+  STORAGE_KEYS,
+  clearAllSessionStores,
+  clearLegacyLocalSession,
+  getSessionStore,
+  loadStore,
+  saveStore,
+} from './storage.js';
+
+export { STORAGE_KEYS };
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 const USE_MOCK = !API_BASE_URL;
 
-const STORAGE_KEYS = {
-  MENUS: 'pesanku_menus_v1',
-  ORDERS: 'pesanku_orders_v1',
-  SESSION: 'pesanku_session_v1',
-};
-
-const SEED_MENUS = [
-  {
-    id: 'm1',
-    name: 'Nasi Ayam Geprek Original',
-    category: 'Makanan',
-    price: 15000,
-    available: true,
-    description: 'Ayam crispy digeprek sambal bawang pedas, nasi hangat, lalapan.',
-  },
-  {
-    id: 'm2',
-    name: 'Nasi Ayam Bakar Madu',
-    category: 'Makanan',
-    price: 18000,
-    available: true,
-    description: 'Ayam ungkep dibakar bumbu madu kecap manis, sambal terasi.',
-  },
-  {
-    id: 'm3',
-    name: 'Nasi Ayam Goreng Kremes',
-    category: 'Makanan',
-    price: 16000,
-    available: true,
-    description: 'Ayam goreng gurih dengan taburan kremesan renyah.',
-  },
-  {
-    id: 'm4',
-    name: 'Paket Geprek Komplit + Es Teh',
-    category: 'Paket',
-    price: 19000,
-    available: true,
-    description: 'Nasi Ayam Geprek, tahu tempe goreng, dan Es Teh Manis.',
-  },
-  {
-    id: 'm5',
-    name: 'Es Teh Manis',
-    category: 'Minuman',
-    price: 5000,
-    available: true,
-    description: 'Teh melati segar diseduh manis dengan es batu.',
-  },
-  {
-    id: 'm6',
-    name: 'Es Jeruk Peras',
-    category: 'Minuman',
-    price: 7000,
-    available: true,
-    description: 'Perasan jeruk asli tanpa sirup buatan.',
-  },
-  {
-    id: 'm7',
-    name: 'Tahu & Tempe Goreng (4 pcs)',
-    category: 'Tambahan',
-    price: 6000,
-    available: true,
-    description: 'Lauk pendamping hangat dengan bumbu ketumbar.',
-  },
-];
-
-function daysAgoIso(days, hour = 12, minute = 0) {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  d.setHours(hour, minute, 0, 0);
-  return d.toISOString();
-}
-
-const SEED_ORDERS = [
-  {
-    id: 'ord-1001',
-    code: 'PK-1001',
-    customerName: 'Budi Santoso',
-    notes: 'Sambal sedang, tidak pakai timun',
-    status: 'Selesai',
-    createdAt: daysAgoIso(3, 12, 15),
-    items: [
-      { menuId: 'm1', name: 'Nasi Ayam Geprek Original', price: 15000, qty: 2, subtotal: 30000 },
-      { menuId: 'm5', name: 'Es Teh Manis', price: 5000, qty: 2, subtotal: 10000 },
-    ],
-    totalItems: 4,
-    totalAmount: 40000,
-  },
-  {
-    id: 'ord-1002',
-    code: 'PK-1002',
-    customerName: 'Rina Wijaya',
-    notes: 'Bungkus terpisah',
-    status: 'Selesai',
-    createdAt: daysAgoIso(2, 13, 5),
-    items: [
-      { menuId: 'm4', name: 'Paket Geprek Komplit + Es Teh', price: 19000, qty: 3, subtotal: 57000 },
-    ],
-    totalItems: 3,
-    totalAmount: 57000,
-  },
-  {
-    id: 'ord-1003',
-    code: 'PK-1003',
-    customerName: 'Dimas Pratama',
-    notes: 'Pedas banget',
-    status: 'Selesai',
-    createdAt: daysAgoIso(1, 18, 30),
-    items: [
-      { menuId: 'm2', name: 'Nasi Ayam Bakar Madu', price: 18000, qty: 2, subtotal: 36000 },
-      { menuId: 'm6', name: 'Es Jeruk Peras', price: 7000, qty: 2, subtotal: 14000 },
-    ],
-    totalItems: 4,
-    totalAmount: 50000,
-  },
-  {
-    id: 'ord-1004',
-    code: 'PK-1004',
-    customerName: 'Siti Aminah',
-    notes: 'Makan di tempat meja 3',
-    status: 'Selesai',
-    createdAt: daysAgoIso(0, 11, 45),
-    items: [
-      { menuId: 'm1', name: 'Nasi Ayam Geprek Original', price: 15000, qty: 2, subtotal: 30000 },
-      { menuId: 'm7', name: 'Tahu & Tempe Goreng (4 pcs)', price: 6000, qty: 1, subtotal: 6000 },
-    ],
-    totalItems: 3,
-    totalAmount: 36000,
-  },
-  {
-    id: 'ord-1005',
-    code: 'PK-1005',
-    customerName: 'Andi Kurniawan',
-    notes: 'Kremesan dipisah',
-    status: 'Diproses',
-    createdAt: daysAgoIso(0, 12, 20),
-    items: [
-      { menuId: 'm3', name: 'Nasi Ayam Goreng Kremes', price: 16000, qty: 2, subtotal: 32000 },
-      { menuId: 'm5', name: 'Es Teh Manis', price: 5000, qty: 2, subtotal: 10000 },
-    ],
-    totalItems: 4,
-    totalAmount: 42000,
-  },
-  {
-    id: 'ord-1006',
-    code: 'PK-1006',
-    customerName: 'Nadia Putri',
-    notes: 'Sambal pisah',
-    status: 'Menunggu',
-    createdAt: daysAgoIso(0, 12, 40),
-    items: [
-      { menuId: 'm4', name: 'Paket Geprek Komplit + Es Teh', price: 19000, qty: 1, subtotal: 19000 },
-      { menuId: 'm1', name: 'Nasi Ayam Geprek Original', price: 15000, qty: 1, subtotal: 15000 },
-    ],
-    totalItems: 2,
-    totalAmount: 34000,
-  },
-];
-
-function loadStore(key, fallback) {
+function saveJwtSession(token, userFallback = null) {
+  const parsed = parseJwt(token);
+  const payload = parsed?.payload || {};
+  const user = userFallback || {
+    name: payload.name || 'Pemilik Warung Mak Nyus',
+    email: payload.email || 'pemilik@maknyus.id',
+    role: payload.role || 'owner',
+  };
+  const iat = payload.iat || Math.floor(Date.now() / 1000);
+  const exp = payload.exp || iat + JWT_TTL_SECONDS;
+  const session = {
+    token,
+    user,
+    iat,
+    exp,
+    expiresAt: exp * 1000,
+  };
   try {
-    const raw = localStorage.getItem(key);
-    if (!raw) {
-      localStorage.setItem(key, JSON.stringify(fallback));
-      return structuredClone(fallback);
+    const store = getSessionStore();
+    if (store) {
+      store.setItem(STORAGE_KEYS.JWT_TOKEN, token);
+      store.setItem(STORAGE_KEYS.SESSION, JSON.stringify(session));
     }
-    return JSON.parse(raw);
   } catch {
-    return structuredClone(fallback);
+    // Ignore storage quota or SSR access errors.
   }
-}
-
-function saveStore(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
+  return session;
 }
 
 async function request(path, options = {}) {
@@ -196,45 +68,103 @@ async function request(path, options = {}) {
 export const isMockMode = USE_MOCK;
 
 export const authApi = {
-  getSession() {
+  verifyToken(token, nowMs = Date.now()) {
+    return verifyJwt(token, { nowMs, verifySignature: USE_MOCK });
+  },
+
+  getSession(nowMs = Date.now()) {
     try {
-      const raw = localStorage.getItem(STORAGE_KEYS.SESSION);
-      return raw ? JSON.parse(raw) : null;
+      const store = getSessionStore();
+      if (!store) return null;
+
+      if (typeof sessionStorage !== 'undefined' && store === sessionStorage) {
+        clearLegacyLocalSession();
+      }
+
+      const rawToken = store.getItem(STORAGE_KEYS.JWT_TOKEN);
+      const rawSession = store.getItem(STORAGE_KEYS.SESSION);
+      const parsedSession = rawSession ? JSON.parse(rawSession) : null;
+      const candidateToken = rawToken || parsedSession?.token || '';
+
+      if (!candidateToken) {
+        if (rawSession) this.logout();
+        return null;
+      }
+
+      const check = this.verifyToken(candidateToken, nowMs);
+      if (!check.valid) {
+        this.logout();
+        return null;
+      }
+
+      const payload = check.payload;
+      const user = parsedSession?.user || {
+        name: payload.name || 'Pemilik Warung Mak Nyus',
+        email: payload.email || 'pemilik@maknyus.id',
+        role: payload.role || 'owner',
+      };
+
+      return {
+        token: candidateToken,
+        user,
+        iat: payload.iat,
+        exp: payload.exp,
+        expiresAt: payload.exp * 1000,
+        remainingSeconds: check.remainingSeconds,
+      };
     } catch {
+      this.logout();
       return null;
     }
   },
 
-  async login(email, password) {
-    if (!email?.trim() || !password?.trim()) {
-      throw new Error('Email dan kata sandi wajib diisi.');
+  async login(email, password, { ttlSeconds = JWT_TTL_SECONDS, nowMs = Date.now() } = {}) {
+    const validation = validateLoginInput({ email, password });
+    if (!validation.valid) {
+      const err = new Error(validation.message);
+      err.errors = validation.errors;
+      throw err;
     }
+
+    const cleanEmail = email.trim().toLowerCase();
     if (!USE_MOCK) {
       const data = await request('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: cleanEmail, password }),
       });
-      saveStore(STORAGE_KEYS.SESSION, data);
-      return data;
+      const parsedBackend = data?.token ? parseJwt(data.token) : null;
+      const hasValidExp = Number.isFinite(Number(parsedBackend?.payload?.exp));
+      const backendToken =
+        parsedBackend && hasValidExp
+          ? data.token
+          : createJwt(
+              {
+                sub: data?.user?.id || parsedBackend?.payload?.sub || 'owner-1',
+                email: data?.user?.email || parsedBackend?.payload?.email || cleanEmail,
+                name: data?.user?.name || parsedBackend?.payload?.name || 'Pemilik Warung Mak Nyus',
+                role: data?.user?.role || parsedBackend?.payload?.role || 'owner',
+              },
+              { ttlSeconds, nowMs }
+            );
+      return saveJwtSession(backendToken, data?.user);
     }
-    // shortcut: kredensial demo lokal untuk pengujian MVP, ganti dengan JWT backend saat integrasi
-    if (email.trim().toLowerCase() === 'pemilik@maknyus.id' && password === 'maknyus2026') {
-      const session = {
-        token: 'mock-owner-token',
-        user: {
-          name: 'Pemilik Warung Mak Nyus',
-          email: 'pemilik@maknyus.id',
-          role: 'owner',
-        },
+
+    // shortcut: kredensial demo lokal untuk pengujian MVP, menggunakan JWT HS256 dengan limit 1 hari (86400 detik)
+    if (cleanEmail === 'pemilik@maknyus.id' && password === 'maknyus2026') {
+      const user = {
+        name: 'Pemilik Warung Mak Nyus',
+        email: 'pemilik@maknyus.id',
+        role: 'owner',
       };
-      saveStore(STORAGE_KEYS.SESSION, session);
-      return session;
+      const token = createJwt({ sub: 'owner-1', ...user }, { ttlSeconds, nowMs });
+      return saveJwtSession(token, user);
     }
+
     throw new Error('Email atau kata sandi salah. Periksa kembali akun pemilik Anda.');
   },
 
   logout() {
-    localStorage.removeItem(STORAGE_KEYS.SESSION);
+    clearAllSessionStores();
   },
 };
 
@@ -245,10 +175,15 @@ export const menuApi = {
   },
 
   async create(payload) {
-    const name = payload.name?.trim();
+    const validation = validateMenuInput(payload, { isPartial: false });
+    if (!validation.valid) {
+      const err = new Error(validation.message);
+      err.errors = validation.errors;
+      throw err;
+    }
+
+    const name = payload.name.trim();
     const price = Number(payload.price);
-    if (!name) throw new Error('Nama menu wajib diisi.');
-    if (!Number.isFinite(price) || price <= 0) throw new Error('Harga menu harus lebih dari Rp0.');
 
     if (!USE_MOCK) {
       return request('/menus', { method: 'POST', body: JSON.stringify(payload) });
@@ -268,18 +203,27 @@ export const menuApi = {
   },
 
   async update(id, patch) {
-    if (patch.name !== undefined && !patch.name.trim()) {
-      throw new Error('Nama menu tidak boleh kosong.');
+    const validation = validateMenuInput(patch, { isPartial: true });
+    if (!validation.valid) {
+      const err = new Error(validation.message);
+      err.errors = validation.errors;
+      throw err;
     }
-    if (patch.price !== undefined && (!Number.isFinite(Number(patch.price)) || Number(patch.price) <= 0)) {
-      throw new Error('Harga menu harus lebih dari Rp0.');
-    }
+
     if (!USE_MOCK) {
       return request(`/menus/${id}`, { method: 'PUT', body: JSON.stringify(patch) });
     }
     const menus = loadStore(STORAGE_KEYS.MENUS, SEED_MENUS);
     const next = menus.map((m) =>
-      m.id === id ? { ...m, ...patch, price: patch.price !== undefined ? Number(patch.price) : m.price } : m
+      m.id === id
+        ? {
+            ...m,
+            ...patch,
+            name: patch.name !== undefined ? patch.name.trim() : m.name,
+            description: patch.description !== undefined ? patch.description.trim() : m.description,
+            price: patch.price !== undefined ? Number(patch.price) : m.price,
+          }
+        : m
     );
     saveStore(STORAGE_KEYS.MENUS, next);
     return next.find((m) => m.id === id);
@@ -306,8 +250,13 @@ export const orderApi = {
   },
 
   async getByCode(code) {
-    const clean = (code || '').trim().toUpperCase();
-    if (!clean) throw new Error('Masukkan kode pesanan terlebih dahulu.');
+    const validation = validateTrackCode(code);
+    if (!validation.valid) {
+      const err = new Error(validation.message);
+      err.errors = validation.errors;
+      throw err;
+    }
+    const clean = validation.normalizedCode;
     if (!USE_MOCK) return request(`/orders/code/${encodeURIComponent(clean)}`);
     const orders = loadStore(STORAGE_KEYS.ORDERS, SEED_ORDERS);
     const found = orders.find((o) => o.code.toUpperCase() === clean);
@@ -316,11 +265,12 @@ export const orderApi = {
   },
 
   async create({ customerName, notes = '', items }) {
-    if (!customerName?.trim()) {
-      throw new Error('Nama pemesan wajib diisi.');
+    const validation = validateCustomerOrderInput({ customerName, notes, items });
+    if (!validation.valid) {
+      const err = new Error(validation.message);
+      err.errors = validation.errors;
+      throw err;
     }
-    const itemError = validateOrderItems(items);
-    if (itemError) throw new Error(itemError);
 
     const { items: normalizedItems, totalItems, totalAmount } = calculateOrderTotals(items);
 
@@ -432,7 +382,7 @@ export const reportApi = {
       summary: `Dari ${summary.totalTransactions} transaksi tercatat dengan total pendapatan Rp${summary.totalRevenue.toLocaleString('id-ID')}, menu paling diminati adalah ${top?.name || '-'} (${top?.qty || 0} porsi).`,
       recommendations: [
         top
-          ? `Pastikan stok bahan baku untuk ${top.name} selalu siap menjelang jam makan siang (11.30–13.30).`
+          ? `Pastikan stok bahan baku untuk ${top.name} selalu siap menjelang jam makan siang (11.30-13.30).`
           : 'Pantau ketersediaan stok menu utama setiap pagi.',
         second
           ? `Pertimbangkan paket bundling ${top.name} + ${second.name} untuk meningkatkan nilai rata-rata transaksi.`

@@ -36,7 +36,7 @@ before(async () => {
     optimizeDeps: { noDiscovery: true },
     logLevel: 'silent',
   });
-  ({ default: AdminLayout } = await vite.ssrLoadModule('/src/components/AdminLayout.jsx'));
+  ({ default: AdminLayout } = await vite.ssrLoadModule('/src/components/organisms/AdminLayout.jsx'));
 });
 
 after(async () => {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateOrderTotals, formatRupiah, validateOrderItems } from './format.js';
+import { calculateOrderTotals, formatRupiah, validateOrderItems } from '../../src/utils/format.js';
 
 test('menghitung 2 Ayam Geprek seharga Rp15.000 menjadi Rp30.000', () => {
   const result = calculateOrderTotals([

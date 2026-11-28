@@ -48,6 +48,16 @@ export function validateOrderItems(items) {
   if (hasInvalidQty) {
     return 'Jumlah pesanan setiap menu harus lebih dari 0.';
   }
+  const hasExcessiveQty = items.some((item) => item.qty > 99);
+  if (hasExcessiveQty) {
+    return 'Jumlah pesanan per menu maksimal 99 porsi.';
+  }
+  const hasInvalidPrice = items.some(
+    (item) => item.price !== undefined && (!Number.isFinite(Number(item.price)) || Number(item.price) <= 0)
+  );
+  if (hasInvalidPrice) {
+    return 'Harga setiap menu dalam pesanan harus lebih dari Rp0.';
+  }
   return null;
 }
 

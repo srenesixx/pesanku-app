@@ -1,5 +1,12 @@
-import { Minus, Plus, ShoppingBag, X } from 'lucide-react';
-import { formatRupiah } from '../utils/format.js';
+import { ShoppingBag, X } from 'lucide-react';
+import { formatRupiah } from '../../utils/format.js';
+import AlertBanner from '../atoms/AlertBanner.jsx';
+import Badge from '../atoms/Badge.jsx';
+import Button from '../atoms/Button.jsx';
+import Input from '../atoms/Input.jsx';
+import EmptyState from '../molecules/EmptyState.jsx';
+import FormField from '../molecules/FormField.jsx';
+import QuantityStepper from '../molecules/QuantityStepper.jsx';
 
 export default function OrderSummaryPanel({
   cartItems = [],
@@ -8,6 +15,7 @@ export default function OrderSummaryPanel({
   customerName = '',
   notes = '',
   error = '',
+  fieldErrors = {},
   submitting = false,
   variant = 'sidebar',
   onCustomerNameChange,
@@ -17,6 +25,8 @@ export default function OrderSummaryPanel({
   onClose,
 }) {
   const isSheet = variant === 'sheet';
+  const nameError = fieldErrors?.customerName || '';
+  const notesError = fieldErrors?.notes || '';
 
   return (
     <div
@@ -39,31 +49,39 @@ export default function OrderSummaryPanel({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <span className="bg-[#FFF3E8] text-[#A93B19] text-xs font-bold px-2.5 py-1 rounded-full tabular-nums">
-            {totalItems} Item
-          </span>
-          {isSheet && (
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Tutup ringkasan pesanan"
-              className="min-h-[44px] px-3 rounded-xl border border-[#E7DFD3] bg-white hover:bg-[#F3ECE2] text-sm font-semibold text-[#1F1915] inline-flex items-center gap-1.5 motion-reduce:transition-none transition-colors"
-            >
-              <X className="w-4 h-4" aria-hidden="true" />
-              <span>Tutup</span>
-            </button>
-          )}
+          {Badge({
+            tone: 'warm',
+            size: 'md',
+            bordered: false,
+            className: 'font-bold tabular-nums',
+            children: `${totalItems} Item`,
+          })}
+          {isSheet &&
+            Button({
+              variant: 'outline',
+              size: 'none',
+              onClick: onClose,
+              'aria-label': 'Tutup ringkasan pesanan',
+              className: 'gap-1.5 px-3 text-sm hover:bg-[#F3ECE2]',
+              children: (
+                <>
+                  <X className="w-4 h-4" aria-hidden="true" />
+                  <span>Tutup</span>
+                </>
+              ),
+            })}
         </div>
       </div>
 
       {cartItems.length === 0 ? (
         <div className={isSheet ? 'flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4' : 'mb-4'}>
-          <div className="py-8 px-4 text-center border border-dashed border-[#E7DFD3] rounded-xl">
-            <p className="text-sm font-semibold text-[#1F1915]">Keranjang masih kosong</p>
-            <p className="text-xs text-[#6B5E54] mt-1">
-              Pilih menu pada daftar menu untuk mulai memesan.
-            </p>
-          </div>
+          {EmptyState({
+            title: 'Keranjang masih kosong',
+            description: 'Pilih menu pada daftar menu untuk mulai memesan.',
+            dashed: true,
+            padding: 'none',
+            className: 'rounded-xl py-8 px-4',
+          })}
         </div>
       ) : (
         <ul
@@ -75,37 +93,23 @@ export default function OrderSummaryPanel({
         >
           {cartItems.map((item) => {
             const subtotal = item.qty * item.price;
+            const stepperNode = QuantityStepper({
+              itemName: item.name,
+              qty: item.qty,
+              onDecrement: () => onUpdateQty?.(item.menuId, -1),
+              onIncrement: () => onUpdateQty?.(item.menuId, 1),
+            });
             const itemControls = (
               <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  aria-label={`Hapus ${item.name}`}
-                  onClick={() => onUpdateQty?.(item.menuId, -item.qty)}
-                  className="min-h-[44px] px-2.5 rounded-lg bg-[#FFF1F2] hover:bg-rose-100 border border-[#FECDD3] text-[#BE123C] text-xs font-semibold motion-reduce:transition-none transition-colors"
-                >
-                  Hapus
-                </button>
-                <div className="inline-flex items-center gap-1 bg-[#FAF7F2] border border-[#E7DFD3] rounded-xl p-0.5">
-                  <button
-                    type="button"
-                    aria-label={`Kurangi ${item.name}`}
-                    onClick={() => onUpdateQty?.(item.menuId, -1)}
-                    className="min-w-[44px] min-h-[44px] rounded-lg bg-white hover:bg-[#F3ECE2] flex items-center justify-center text-[#1F1915] motion-reduce:transition-none transition-colors"
-                  >
-                    <Minus className="w-4 h-4" aria-hidden="true" />
-                  </button>
-                  <span className="min-w-[24px] text-center text-sm font-bold tabular-nums text-[#1F1915]">
-                    {item.qty}
-                  </span>
-                  <button
-                    type="button"
-                    aria-label={`Tambah ${item.name}`}
-                    onClick={() => onUpdateQty?.(item.menuId, 1)}
-                    className="min-w-[44px] min-h-[44px] rounded-lg bg-[#C84B24] hover:bg-[#A93B19] flex items-center justify-center text-white motion-reduce:transition-none transition-colors"
-                  >
-                    <Plus className="w-4 h-4" aria-hidden="true" />
-                  </button>
-                </div>
+                {Button({
+                  variant: 'danger',
+                  size: 'none',
+                  'aria-label': `Hapus ${item.name}`,
+                  onClick: () => onUpdateQty?.(item.menuId, -item.qty),
+                  className: 'rounded-lg bg-[#FFF1F2] border-[#FECDD3] text-[#BE123C] px-2.5 text-xs',
+                  children: 'Hapus',
+                })}
+                {stepperNode}
               </div>
             );
 
@@ -182,44 +186,37 @@ export default function OrderSummaryPanel({
         }
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-          <div>
-            <label htmlFor="customer-name" className="block text-xs font-semibold text-[#1F1915] mb-1">
-              Nama Pemesan *
-            </label>
-            <input
-              id="customer-name"
-              type="text"
-              required
-              value={customerName}
-              onChange={(e) => onCustomerNameChange?.(e.target.value)}
-              placeholder="Contoh: Budi Santoso"
-              className="w-full min-h-[44px] px-3 py-2 rounded-xl border border-[#E7DFD3] bg-white text-sm text-[#1F1915] placeholder:text-[#6B5E54] focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24]/30"
-            />
-          </div>
+          {FormField({
+            id: 'customer-name',
+            label: 'Nama Pemesan *',
+            error: nameError,
+            children: Input({
+              id: 'customer-name',
+              type: 'text',
+              required: true,
+              value: customerName,
+              error: nameError,
+              onChange: (e) => onCustomerNameChange?.(e.target.value),
+              placeholder: 'Contoh: Budi Santoso',
+            }),
+          })}
 
-          <div>
-            <label htmlFor="customer-notes" className="block text-xs font-semibold text-[#1F1915] mb-1">
-              Catatan (opsional)
-            </label>
-            <input
-              id="customer-notes"
-              type="text"
-              value={notes}
-              onChange={(e) => onNotesChange?.(e.target.value)}
-              placeholder="Level pedas, bungkus / makan di tempat..."
-              className="w-full min-h-[44px] px-3 py-2 rounded-xl border border-[#E7DFD3] bg-white text-sm text-[#1F1915] placeholder:text-[#6B5E54] focus:border-[#C84B24] focus-visible:ring-2 focus-visible:ring-[#C84B24]/30"
-            />
-          </div>
+          {FormField({
+            id: 'customer-notes',
+            label: 'Catatan (opsional)',
+            error: notesError,
+            children: Input({
+              id: 'customer-notes',
+              type: 'text',
+              value: notes,
+              error: notesError,
+              onChange: (e) => onNotesChange?.(e.target.value),
+              placeholder: 'Level pedas, bungkus / makan di tempat...',
+            }),
+          })}
         </div>
 
-        {error && (
-          <div
-            role="alert"
-            className="rounded-xl bg-rose-50 border border-rose-200 px-3 py-2 text-xs text-rose-800"
-          >
-            {error}
-          </div>
-        )}
+        {error && AlertBanner({ message: error })}
 
         <div className={isSheet ? 'flex flex-col sm:flex-row sm:items-center gap-3' : 'flex flex-col gap-3'}>
           <div
@@ -237,17 +234,16 @@ export default function OrderSummaryPanel({
             </span>
           </div>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className={
-              isSheet
-                ? 'w-full sm:w-auto sm:min-w-[180px] min-h-[44px] py-2.5 px-5 rounded-xl bg-[#C84B24] hover:bg-[#A93B19] disabled:opacity-60 text-white font-bold text-sm motion-reduce:transition-none transition-colors'
-                : 'w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-[#C84B24] hover:bg-[#A93B19] disabled:opacity-60 text-white font-bold text-sm motion-reduce:transition-none transition-colors'
-            }
-          >
-            {submitting ? 'Mengirim Pesanan...' : 'Kirim Pesanan'}
-          </button>
+          {Button({
+            type: 'submit',
+            variant: 'primary',
+            size: 'none',
+            disabled: submitting,
+            className: isSheet
+              ? 'w-full sm:w-auto sm:min-w-[180px] py-2.5 px-5 text-sm'
+              : 'w-full py-2.5 px-4 text-sm',
+            children: submitting ? 'Mengirim Pesanan...' : 'Kirim Pesanan',
+          })}
         </div>
       </form>
     </div>
